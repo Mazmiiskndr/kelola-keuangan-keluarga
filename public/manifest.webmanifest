@@ -1,0 +1,27 @@
+{
+    "name": "Kelola Keuangan Keluarga",
+    "short_name": "Keuangan",
+    "description": "Aplikasi pengelolaan pemasukan, pengeluaran, hutang, tabungan, investasi, dan rekomendasi AI keluarga.",
+    "start_url": "/dashboard",
+    "scope": "/",
+    "display": "standalone",
+    "display_override": ["window-controls-overlay", "standalone", "browser"],
+    "background_color": "#f8fafc",
+    "theme_color": "#0f172a",
+    "orientation": "portrait-primary",
+    "categories": ["finance", "productivity"],
+    "icons": [
+        {
+            "src": "/icons/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/maskable-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ]
+}
