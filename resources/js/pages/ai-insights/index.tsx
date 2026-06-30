@@ -1,10 +1,10 @@
 import { DateTimeDisplay } from '@/components/finance/date-display';
+import { MonthPickerInput } from '@/components/finance/date-picker-input';
+import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -45,7 +45,7 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
                             <form className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
                                     <Label>Periode</Label>
-                                    <Input type="month" value={form.data.period} onChange={(event) => form.setData('period', event.target.value)} />
+                                    <MonthPickerInput value={form.data.period} onValueChange={(value) => form.setData('period', value)} />
                                     <FormError message={form.errors.period} />
                                 </div>
                                 <SubmitButton processing={form.processing}>Analisis dengan AI</SubmitButton>
@@ -69,7 +69,7 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
                                                 Model: {analysis.model_name || 'openai'} · {analysis.status}
                                             </p>
                                         </div>
-                                        <Badge variant="outline">{analysis.analysis_type}</Badge>
+                                        <FinanceBadge value={analysis.analysis_type} />
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -79,7 +79,7 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
                                             <div key={recommendation.id} className="rounded-lg border p-4">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <p className="font-medium">{recommendation.title}</p>
-                                                    <Badge variant="secondary">{recommendation.type}</Badge>
+                                                    <FinanceBadge value={recommendation.type} />
                                                 </div>
                                                 <p className="text-muted-foreground mt-2 text-sm">{recommendation.description}</p>
                                                 {recommendation.estimated_saving_amount && (

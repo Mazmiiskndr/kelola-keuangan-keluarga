@@ -38,6 +38,24 @@ class FinancialAccountController extends Controller
         return back()->with('success', 'Akun keuangan berhasil dibuat.');
     }
 
+    public function update(StoreFinancialAccountRequest $request, FinancialAccount $account): RedirectResponse
+    {
+        abort_unless($account->user_id === $request->user()->id, 403);
+
+        $data = $request->validated();
+        $accountName = filled($data['name'] ?? null) ? $data['name'] : $data['bank_name'].' - '.$data['account_holder_name'];
+        $balanceDelta = (float) $data['initial_balance'] - (float) $account->initial_balance;
+
+        $account->update([
+            ...$data,
+            'name' => $accountName,
+            'currency' => $data['currency'] ?? 'IDR',
+            'current_balance' => (float) $account->current_balance + $balanceDelta,
+        ]);
+
+        return back()->with('success', 'Akun keuangan berhasil diperbarui.');
+    }
+
     public function destroy(Request $request, FinancialAccount $account): RedirectResponse
     {
         abort_unless($account->user_id === $request->user()->id, 403);

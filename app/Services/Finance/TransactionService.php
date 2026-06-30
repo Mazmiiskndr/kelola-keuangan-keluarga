@@ -40,10 +40,16 @@ class TransactionService
      */
     public function normalizePayload(array $data, int $userId): array
     {
-        return [
+        $payload = [
             ...Arr::except($data, ['tags']),
             'user_id' => $userId,
             'tags' => filled($data['tags'] ?? null) ? array_map('trim', explode(',', (string) $data['tags'])) : null,
         ];
+
+        if (isset($payload['type']) && $payload['type'] !== \App\Enums\TransactionType::Saving->value) {
+            $payload['saving_goal_id'] = null;
+        }
+
+        return $payload;
     }
 }

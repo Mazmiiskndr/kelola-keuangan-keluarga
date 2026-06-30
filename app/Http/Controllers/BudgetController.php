@@ -38,6 +38,18 @@ class BudgetController extends Controller
         return back()->with('success', 'Budget berhasil disimpan.');
     }
 
+    public function update(StoreBudgetRequest $request, Budget $budget): RedirectResponse
+    {
+        abort_unless($budget->user_id === $request->user()->id, 403);
+
+        $budget->update([
+            ...$request->validated(),
+            'alert_thresholds' => $budget->alert_thresholds ?? [50, 80, 100],
+        ]);
+
+        return back()->with('success', 'Budget berhasil diperbarui.');
+    }
+
     public function destroy(Request $request, Budget $budget): RedirectResponse
     {
         abort_unless($budget->user_id === $request->user()->id, 403);

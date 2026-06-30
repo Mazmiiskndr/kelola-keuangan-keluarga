@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kelola Keuangan">
+    <defs>
+        <linearGradient id="bg" x1="8" x2="56" y1="6" y2="58" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#111827"/>
+            <stop offset="1" stop-color="#020617"/>
+        </linearGradient>
+        <linearGradient id="accent" x1="34" x2="54" y1="28" y2="48" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#22d3ee"/>
+            <stop offset="1" stop-color="#10b981"/>
+        </linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+    <rect x="14" y="19" width="31" height="23" rx="6" fill="#f8fafc"/>
+    <path d="M18 25h20M18 31h13" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M36 44c5-7 9-11 16-16" stroke="url(#accent)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M50 28v14h-14" stroke="url(#accent)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

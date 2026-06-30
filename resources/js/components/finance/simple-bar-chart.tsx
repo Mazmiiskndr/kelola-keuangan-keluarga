@@ -1,7 +1,7 @@
 import { MoneyDisplay } from '@/components/finance/money-display';
 
 interface SimpleBarChartProps {
-    data: Array<{ label: string; income: number; expense: number }>;
+    data: Array<{ key?: string; label: string; income: number; expense: number }>;
 }
 
 export function SimpleBarChart({ data }: SimpleBarChartProps) {
@@ -9,8 +9,8 @@ export function SimpleBarChart({ data }: SimpleBarChartProps) {
 
     return (
         <div className="flex h-64 items-end gap-4">
-            {data.map((item) => (
-                <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
+            {data.map((item, index) => (
+                <div key={`${item.key ?? item.label}-${index}`} className="flex flex-1 flex-col items-center gap-2">
                     <div className="flex h-48 w-full items-end justify-center gap-1">
                         <div
                             className="w-3 rounded-t bg-emerald-500"

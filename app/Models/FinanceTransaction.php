@@ -15,6 +15,7 @@ class FinanceTransaction extends Model
         'family_id',
         'financial_account_id',
         'category_id',
+        'saving_goal_id',
         'type',
         'amount',
         'transaction_date',
@@ -52,6 +53,11 @@ class FinanceTransaction extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function savingGoal(): BelongsTo
+    {
+        return $this->belongsTo(SavingGoal::class);
     }
 
     public function family(): BelongsTo

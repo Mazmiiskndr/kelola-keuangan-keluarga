@@ -1,18 +1,20 @@
+import { CurrencyInput } from '@/components/finance/currency-input';
+import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
+import { toFormString } from '@/lib/form-values';
 import { type BreadcrumbItem } from '@/types';
 import { type FinancialAccount } from '@/types/finance';
 import { Head, router, useForm } from '@inertiajs/react';
-import { CreditCard, Trash2 } from 'lucide-react';
-import type React from 'react';
+import { CreditCard, Pencil, Trash2, X } from 'lucide-react';
+import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Akun', href: '/accounts' }];
 
@@ -39,6 +41,7 @@ interface AccountsProps {
 }
 
 export default function AccountsIndex({ accounts }: AccountsProps) {
+    const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
     const form = useForm({
         name: '',
         bank_name: 'BCA',
@@ -52,9 +55,46 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
-        form.post('/accounts', {
+
+        const options = {
             preserveScroll: true,
-            onSuccess: () => form.reset('name', 'account_holder_name', 'account_number', 'initial_balance'),
+            onSuccess: () => resetForm(),
+        };
+
+        if (editingAccountId) {
+            form.put(`/accounts/${editingAccountId}`, options);
+
+            return;
+        }
+
+        form.post('/accounts', options);
+    }
+
+    function resetForm() {
+        setEditingAccountId(null);
+        form.setData({
+            name: '',
+            bank_name: 'BCA',
+            account_holder_name: '',
+            account_number: '',
+            type: 'bank',
+            initial_balance: '',
+            currency: 'IDR',
+            visibility: 'private',
+        });
+    }
+
+    function editAccount(account: FinancialAccount) {
+        setEditingAccountId(account.id);
+        form.setData({
+            name: account.name ?? '',
+            bank_name: account.bank_name ?? 'BCA',
+            account_holder_name: account.account_holder_name ?? '',
+            account_number: account.account_number ?? '',
+            type: account.type,
+            initial_balance: toFormString(account.initial_balance),
+            currency: account.currency ?? 'IDR',
+            visibility: account.visibility ?? 'private',
         });
     }
 
@@ -71,7 +111,19 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                 <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
                     <Card className="rounded-lg">
                         <CardHeader>
-                            <CardTitle>Tambah Rekening</CardTitle>
+                            <div className="flex items-center justify-between gap-3">
+                                <CardTitle>{editingAccountId ? 'Edit Rekening' : 'Tambah Rekening'}</CardTitle>
+                                {editingAccountId && (
+                                    <button
+                                        type="button"
+                                        className="text-muted-foreground rounded-md p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white"
+                                        onClick={resetForm}
+                                        aria-label="Batal edit rekening"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                )}
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
@@ -132,16 +184,14 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="initial_balance">Saldo awal</Label>
-                                    <Input
+                                    <CurrencyInput
                                         id="initial_balance"
-                                        type="number"
-                                        min="0"
                                         value={form.data.initial_balance}
-                                        onChange={(event) => form.setData('initial_balance', event.target.value)}
+                                        onValueChange={(value) => form.setData('initial_balance', value)}
                                     />
                                     <FormError message={form.errors.initial_balance} />
                                 </div>
-                                <SubmitButton processing={form.processing}>Simpan Rekening</SubmitButton>
+                                <SubmitButton processing={form.processing}>{editingAccountId ? 'Perbarui Rekening' : 'Simpan Rekening'}</SubmitButton>
                             </form>
                         </CardContent>
                     </Card>
@@ -156,15 +206,29 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className="font-medium">{accountLabel(account)}</p>
-                                            <Badge variant="outline">{account.type}</Badge>
+                                            <FinanceBadge value={account.type} />
                                         </div>
-                                        <p className="text-muted-foreground mt-1 text-sm">
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            {account.account_number && (
+                                                <span className="text-muted-foreground text-sm">{account.account_number}</span>
+                                            )}
+                                            <FinanceBadge value={account.visibility} />
+                                            <FinanceBadge value={account.currency} />
+                                        </div>
+                                        <p className="hidden">
                                             {account.account_number ? `${account.account_number} · ` : ''}
                                             {account.visibility} · {account.currency}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <MoneyDisplay value={account.current_balance} className="font-semibold" />
+                                        <button
+                                            className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                            onClick={() => editAccount(account)}
+                                            aria-label="Edit rekening"
+                                        >
+                                            <Pencil className="size-4" />
+                                        </button>
                                         <button
                                             className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
                                             onClick={() => router.delete(`/accounts/${account.id}`, { preserveScroll: true })}

@@ -32,6 +32,18 @@ class SavingGoalController extends Controller
         return back()->with('success', 'Target tabungan berhasil dibuat.');
     }
 
+    public function update(StoreSavingGoalRequest $request, SavingGoal $savingGoal): RedirectResponse
+    {
+        abort_unless($savingGoal->user_id === $request->user()->id, 403);
+
+        $savingGoal->update([
+            ...$request->validated(),
+            'current_amount' => $request->validated('current_amount') ?? 0,
+        ]);
+
+        return back()->with('success', 'Target tabungan berhasil diperbarui.');
+    }
+
     public function destroy(Request $request, SavingGoal $savingGoal): RedirectResponse
     {
         abort_unless($savingGoal->user_id === $request->user()->id, 403);

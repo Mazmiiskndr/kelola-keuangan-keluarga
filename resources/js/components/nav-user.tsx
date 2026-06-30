@@ -8,7 +8,7 @@ import { usePage } from '@inertiajs/react';
 import { ChevronsUpDown } from 'lucide-react';
 
 export function NavUser() {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, notifications } = usePage<SharedData>().props;
     const { state } = useSidebar();
     const isMobile = useIsMobile();
 
@@ -17,8 +17,19 @@ export function NavUser() {
             <SidebarMenuItem>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton size="lg" className="text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent group">
-                            <UserInfo user={auth.user} />
+                        <SidebarMenuButton
+                            size="lg"
+                            className="text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent group flex items-center gap-2"
+                        >
+                            <div className="relative flex min-w-0 flex-1 items-center gap-2">
+                                <UserInfo user={auth.user} />
+                                {(notifications?.unread_count ?? 0) > 0 && (
+                                    <span
+                                        className="ring-sidebar absolute top-0 left-7 size-2.5 rounded-full bg-rose-500 ring-2"
+                                        aria-hidden="true"
+                                    />
+                                )}
+                            </div>
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>

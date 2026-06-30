@@ -1,7 +1,7 @@
+import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,8 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { type Category } from '@/types/finance';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Tags, Trash2 } from 'lucide-react';
-import type React from 'react';
+import { Pencil, Tags, Trash2, X } from 'lucide-react';
+import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Kategori', href: '/categories' }];
 
@@ -20,6 +20,7 @@ interface CategoriesProps {
 }
 
 export default function CategoriesIndex({ categories }: CategoriesProps) {
+    const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
     const form = useForm({
         name: '',
         type: 'expense',
@@ -32,7 +33,41 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
-        form.post('/categories', { preserveScroll: true, onSuccess: () => form.reset('name', 'icon') });
+        const options = { preserveScroll: true, onSuccess: () => resetForm() };
+
+        if (editingCategoryId) {
+            form.put(`/categories/${editingCategoryId}`, options);
+
+            return;
+        }
+
+        form.post('/categories', options);
+    }
+
+    function resetForm() {
+        setEditingCategoryId(null);
+        form.setData({
+            name: '',
+            type: 'expense',
+            color: '#2563eb',
+            icon: '',
+            is_essential: false,
+            is_savable: false,
+            is_lifestyle: false,
+        });
+    }
+
+    function editCategory(category: Category) {
+        setEditingCategoryId(category.id);
+        form.setData({
+            name: category.name,
+            type: category.type,
+            color: category.color ?? '#2563eb',
+            icon: category.icon ?? '',
+            is_essential: Boolean(category.is_essential),
+            is_savable: Boolean(category.is_savable),
+            is_lifestyle: Boolean(category.is_lifestyle),
+        });
     }
 
     return (
@@ -48,7 +83,19 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                 <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
                     <Card className="rounded-lg">
                         <CardHeader>
-                            <CardTitle>Tambah Kategori</CardTitle>
+                            <div className="flex items-center justify-between gap-3">
+                                <CardTitle>{editingCategoryId ? 'Edit Kategori' : 'Tambah Kategori'}</CardTitle>
+                                {editingCategoryId && (
+                                    <button
+                                        type="button"
+                                        className="text-muted-foreground rounded-md p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white"
+                                        onClick={resetForm}
+                                        aria-label="Batal edit kategori"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                )}
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
@@ -105,7 +152,9 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                                         Lifestyle
                                     </label>
                                 </div>
-                                <SubmitButton processing={form.processing}>Simpan Kategori</SubmitButton>
+                                <SubmitButton processing={form.processing}>
+                                    {editingCategoryId ? 'Perbarui Kategori' : 'Simpan Kategori'}
+                                </SubmitButton>
                             </form>
                         </CardContent>
                     </Card>
@@ -123,20 +172,29 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                                             <p className="font-medium">{category.name}</p>
                                         </div>
                                         <div className="mt-2 flex flex-wrap gap-2">
-                                            <Badge variant="outline">{category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</Badge>
-                                            {category.is_default && <Badge variant="secondary">Default</Badge>}
-                                            {category.is_savable && <Badge variant="outline">Bisa hemat</Badge>}
+                                            <FinanceBadge value={category.type} />
+                                            {category.is_default && <FinanceBadge value="default" />}
+                                            {category.is_savable && <FinanceBadge value="savable" />}
                                         </div>
                                     </div>
-                                    {!category.is_default && (
+                                    <div className="flex shrink-0 items-center gap-2">
                                         <button
-                                            className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                            onClick={() => router.delete(`/categories/${category.id}`, { preserveScroll: true })}
-                                            aria-label="Hapus kategori"
+                                            className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                            onClick={() => editCategory(category)}
+                                            aria-label="Edit kategori"
                                         >
-                                            <Trash2 className="size-4" />
+                                            <Pencil className="size-4" />
                                         </button>
-                                    )}
+                                        {!category.is_default && (
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
+                                                onClick={() => router.delete(`/categories/${category.id}`, { preserveScroll: true })}
+                                                aria-label="Hapus kategori"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </CardContent>

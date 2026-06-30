@@ -41,6 +41,21 @@ class DebtController extends Controller
         return back()->with('success', 'Hutang berhasil disimpan.');
     }
 
+    public function update(StoreDebtRequest $request, Debt $debt): RedirectResponse
+    {
+        abort_unless($debt->user_id === $request->user()->id, 403);
+
+        $data = $request->validated();
+
+        $debt->update([
+            ...$data,
+            'outstanding_amount' => $data['outstanding_amount'] ?? $data['principal_amount'],
+            'minimum_payment' => $data['minimum_payment'] ?? $data['monthly_payment'],
+        ]);
+
+        return back()->with('success', 'Hutang berhasil diperbarui.');
+    }
+
     public function pay(StoreDebtPaymentRequest $request, Debt $debt): RedirectResponse
     {
         abort_unless($debt->user_id === $request->user()->id, 403);

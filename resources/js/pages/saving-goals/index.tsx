@@ -1,20 +1,23 @@
+import { CurrencyInput } from '@/components/finance/currency-input';
 import { DateTimeDisplay } from '@/components/finance/date-display';
+import { DatePickerInput } from '@/components/finance/date-picker-input';
+import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
 import { ProgressRow } from '@/components/finance/progress-row';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
+import { toDateInputValue, toFormString } from '@/lib/form-values';
 import { type BreadcrumbItem } from '@/types';
 import { type FinancialAccount, type SavingGoal } from '@/types/finance';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Goal, Trash2 } from 'lucide-react';
-import type React from 'react';
+import { Goal, Pencil, Trash2, X } from 'lucide-react';
+import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Tabungan', href: '/saving-goals' }];
 
@@ -24,6 +27,7 @@ interface SavingGoalsProps {
 }
 
 export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsProps) {
+    const [editingGoalId, setEditingGoalId] = useState<number | null>(null);
     const form = useForm({
         financial_account_id: '',
         name: '',
@@ -35,7 +39,39 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
-        form.post('/saving-goals', { preserveScroll: true, onSuccess: () => form.reset('name', 'target_amount', 'current_amount', 'target_date') });
+        const options = { preserveScroll: true, onSuccess: () => resetForm() };
+
+        if (editingGoalId) {
+            form.put(`/saving-goals/${editingGoalId}`, options);
+
+            return;
+        }
+
+        form.post('/saving-goals', options);
+    }
+
+    function resetForm() {
+        setEditingGoalId(null);
+        form.setData({
+            financial_account_id: '',
+            name: '',
+            target_amount: '',
+            current_amount: '0',
+            target_date: '',
+            priority: 'medium',
+        });
+    }
+
+    function editGoal(goal: SavingGoal) {
+        setEditingGoalId(goal.id);
+        form.setData({
+            financial_account_id: goal.financial_account_id?.toString() ?? goal.account?.id?.toString() ?? '',
+            name: goal.name,
+            target_amount: toFormString(goal.target_amount),
+            current_amount: toFormString(goal.current_amount),
+            target_date: toDateInputValue(goal.target_date),
+            priority: goal.priority,
+        });
     }
 
     return (
@@ -50,7 +86,19 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                 <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
                     <Card className="rounded-lg">
                         <CardHeader>
-                            <CardTitle>Tambah Target</CardTitle>
+                            <div className="flex items-center justify-between gap-3">
+                                <CardTitle>{editingGoalId ? 'Edit Target' : 'Tambah Target'}</CardTitle>
+                                {editingGoalId && (
+                                    <button
+                                        type="button"
+                                        className="text-muted-foreground rounded-md p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white"
+                                        onClick={resetForm}
+                                        aria-label="Batal edit target"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                )}
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
@@ -81,30 +129,25 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-2">
                                         <Label>Target</Label>
-                                        <Input
-                                            type="number"
-                                            min="0"
+                                        <CurrencyInput
                                             value={form.data.target_amount}
-                                            onChange={(event) => form.setData('target_amount', event.target.value)}
+                                            onValueChange={(value) => form.setData('target_amount', value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Terkumpul</Label>
-                                        <Input
-                                            type="number"
-                                            min="0"
+                                        <CurrencyInput
                                             value={form.data.current_amount}
-                                            onChange={(event) => form.setData('current_amount', event.target.value)}
+                                            onValueChange={(value) => form.setData('current_amount', value)}
                                         />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-2">
                                         <Label>Deadline</Label>
-                                        <Input
-                                            type="date"
+                                        <DatePickerInput
                                             value={form.data.target_date}
-                                            onChange={(event) => form.setData('target_date', event.target.value)}
+                                            onValueChange={(value) => form.setData('target_date', value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -120,7 +163,7 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                                         />
                                     </div>
                                 </div>
-                                <SubmitButton processing={form.processing}>Simpan Target</SubmitButton>
+                                <SubmitButton processing={form.processing}>{editingGoalId ? 'Perbarui Target' : 'Simpan Target'}</SubmitButton>
                             </form>
                         </CardContent>
                     </Card>
@@ -139,7 +182,14 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="outline">{goal.priority}</Badge>
+                                            <FinanceBadge value={goal.priority} />
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                                onClick={() => editGoal(goal)}
+                                                aria-label="Edit target"
+                                            >
+                                                <Pencil className="size-4" />
+                                            </button>
                                             <button
                                                 className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
                                                 onClick={() => router.delete(`/saving-goals/${goal.id}`, { preserveScroll: true })}

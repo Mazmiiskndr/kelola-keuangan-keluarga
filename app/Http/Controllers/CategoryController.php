@@ -38,6 +38,15 @@ class CategoryController extends Controller
         return back()->with('success', 'Kategori berhasil dibuat.');
     }
 
+    public function update(StoreCategoryRequest $request, Category $category): RedirectResponse
+    {
+        abort_unless($category->user_id === $request->user()->id, 403);
+
+        $category->update($request->validated());
+
+        return back()->with('success', 'Kategori berhasil diperbarui.');
+    }
+
     public function destroy(Request $request, Category $category): RedirectResponse
     {
         abort_unless($category->user_id === $request->user()->id, 403);

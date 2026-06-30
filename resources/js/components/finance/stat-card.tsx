@@ -29,7 +29,7 @@ export function StatCard({ title, value, description, icon: Icon, tone = 'slate'
                     <div className="min-w-0">
                         <p className="text-muted-foreground text-xs font-medium">{title}</p>
                         <p className="mt-2 text-xl font-semibold tracking-normal text-slate-950 dark:text-white">
-                            <MoneyDisplay value={value} compact />
+                            <MoneyDisplay value={value} />
                         </p>
                     </div>
                     <div className={cn('rounded-md p-2', tones[tone])}>

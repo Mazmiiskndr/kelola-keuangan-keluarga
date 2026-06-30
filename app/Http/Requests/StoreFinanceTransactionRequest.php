@@ -15,8 +15,9 @@ class StoreFinanceTransactionRequest extends FormRequest
     {
         return [
             'financial_account_id' => ['required', 'exists:financial_accounts,id'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'type' => ['required', 'in:income,expense'],
+            'category_id' => ['required_unless:type,saving', 'nullable', 'exists:categories,id'],
+            'saving_goal_id' => ['required_if:type,saving', 'nullable', 'exists:saving_goals,id'],
+            'type' => ['required', 'in:income,expense,saving'],
             'amount' => ['required', 'numeric', 'min:1'],
             'transaction_date' => ['required', 'date'],
             'description' => ['nullable', 'string', 'max:255'],

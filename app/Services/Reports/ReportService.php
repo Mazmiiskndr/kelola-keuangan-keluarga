@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Models\Family;
 use App\Models\User;
 use App\Services\Finance\FinancialMetricService;
 
@@ -12,8 +13,8 @@ class ReportService
     /**
      * @return array<string, mixed>
      */
-    public function monthly(User $user, ?string $period = null): array
+    public function monthly(User $user, ?string $period = null, string $scope = 'personal', ?Family $family = null): array
     {
-        return $this->metrics->monthlySummary($user, $period);
+        return $this->metrics->monthlySummary($user, $period, $scope, $family);
     }
 }

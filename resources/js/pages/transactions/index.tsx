@@ -1,16 +1,18 @@
+import { CurrencyInput } from '@/components/finance/currency-input';
 import { DateTimeDisplay } from '@/components/finance/date-display';
+import { DatePickerInput } from '@/components/finance/date-picker-input';
+import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
 import { type BreadcrumbItem } from '@/types';
-import { type Category, type FinanceTransaction, type FinancialAccount, type Paginated } from '@/types/finance';
+import { type Category, type FinanceTransaction, type FinancialAccount, type Paginated, type SavingGoal } from '@/types/finance';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowRightLeft, ReceiptText, Trash2 } from 'lucide-react';
 import type React from 'react';
@@ -21,12 +23,14 @@ interface TransactionsProps {
     transactions: Paginated<FinanceTransaction>;
     accounts: FinancialAccount[];
     categories: Category[];
+    savingGoals: SavingGoal[];
 }
 
-export default function TransactionsIndex({ transactions, accounts, categories }: TransactionsProps) {
+export default function TransactionsIndex({ transactions, accounts, categories, savingGoals }: TransactionsProps) {
     const form = useForm({
         financial_account_id: accounts[0]?.id?.toString() ?? '',
         category_id: categories[0]?.id?.toString() ?? '',
+        saving_goal_id: savingGoals[0]?.id?.toString() ?? '',
         type: 'expense',
         amount: '',
         transaction_date: new Date().toISOString().slice(0, 10),
@@ -45,7 +49,7 @@ export default function TransactionsIndex({ transactions, accounts, categories }
         description: '',
     });
 
-    const filteredCategories = categories.filter((category) => category.type === form.data.type);
+    const filteredCategories = form.data.type === 'saving' ? [] : categories.filter((category) => category.type === form.data.type);
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
@@ -81,30 +85,34 @@ export default function TransactionsIndex({ transactions, accounts, categories }
                                             <FinanceSelect
                                                 value={form.data.type}
                                                 onValueChange={(nextType) => {
-                                                    const nextCategory = categories.find((category) => category.type === nextType);
+                                                    const nextCategory =
+                                                        nextType === 'saving' ? undefined : categories.find((category) => category.type === nextType);
                                                     form.setData((data) => ({
                                                         ...data,
                                                         type: nextType,
                                                         category_id: nextCategory?.id?.toString() ?? '',
+                                                        saving_goal_id:
+                                                            nextType === 'saving' ? (savingGoals[0]?.id?.toString() ?? '') : data.saving_goal_id,
+                                                        need_type: nextType === 'saving' ? 'financial' : data.need_type,
                                                     }));
                                                 }}
                                                 options={[
                                                     { value: 'expense', label: 'Pengeluaran' },
                                                     { value: 'income', label: 'Pemasukan' },
+                                                    { value: 'saving', label: 'Tabungan' },
                                                 ]}
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Tanggal</Label>
-                                            <Input
-                                                type="date"
+                                            <DatePickerInput
                                                 value={form.data.transaction_date}
-                                                onChange={(event) => form.setData('transaction_date', event.target.value)}
+                                                onValueChange={(value) => form.setData('transaction_date', value)}
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Akun</Label>
+                                        <Label>{form.data.type === 'saving' ? 'Akun sumber' : 'Akun'}</Label>
                                         <FinanceSelect
                                             value={form.data.financial_account_id}
                                             onValueChange={(value) => form.setData('financial_account_id', value)}
@@ -116,33 +124,48 @@ export default function TransactionsIndex({ transactions, accounts, categories }
                                         />
                                         <FormError message={form.errors.financial_account_id} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Kategori</Label>
-                                        <FinanceSelect
-                                            value={form.data.category_id}
-                                            onValueChange={(value) => form.setData('category_id', value)}
-                                            options={filteredCategories.map((category) => ({
-                                                value: category.id.toString(),
-                                                label: category.name,
-                                            }))}
-                                            placeholder="Pilih kategori"
-                                        />
-                                        <FormError message={form.errors.category_id} />
-                                    </div>
+                                    {form.data.type === 'saving' ? (
+                                        <div className="space-y-2">
+                                            <Label>Target tabungan</Label>
+                                            <FinanceSelect
+                                                value={form.data.saving_goal_id}
+                                                onValueChange={(value) => form.setData('saving_goal_id', value)}
+                                                options={savingGoals.map((goal) => ({
+                                                    value: goal.id.toString(),
+                                                    label: goal.account ? `${goal.name} - ${accountLabel(goal.account, true)}` : goal.name,
+                                                }))}
+                                                placeholder="Pilih target tabungan"
+                                            />
+                                            <FormError message={form.errors.saving_goal_id} />
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <Label>Kategori</Label>
+                                            <FinanceSelect
+                                                value={form.data.category_id}
+                                                onValueChange={(value) => form.setData('category_id', value)}
+                                                options={filteredCategories.map((category) => ({
+                                                    value: category.id.toString(),
+                                                    label: category.name,
+                                                }))}
+                                                placeholder="Pilih kategori"
+                                            />
+                                            <FormError message={form.errors.category_id} />
+                                        </div>
+                                    )}
                                     <div className="space-y-2">
                                         <Label>Nominal</Label>
-                                        <Input
-                                            type="number"
-                                            min="1"
-                                            value={form.data.amount}
-                                            onChange={(event) => form.setData('amount', event.target.value)}
-                                        />
+                                        <CurrencyInput value={form.data.amount} onValueChange={(value) => form.setData('amount', value)} />
                                         <FormError message={form.errors.amount} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Merchant</Label>
-                                            <Input value={form.data.merchant} onChange={(event) => form.setData('merchant', event.target.value)} />
+                                            <Label>Judul</Label>
+                                            <Input
+                                                value={form.data.merchant}
+                                                onChange={(event) => form.setData('merchant', event.target.value)}
+                                                placeholder="Contoh: Rokok, Bensin, dll"
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Kebutuhan</Label>
@@ -192,6 +215,7 @@ export default function TransactionsIndex({ transactions, accounts, categories }
                                                 }))}
                                                 placeholder="Pilih akun"
                                             />
+                                            <FormError message={transferForm.errors.from_account_id} />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Ke</Label>
@@ -204,25 +228,25 @@ export default function TransactionsIndex({ transactions, accounts, categories }
                                                 }))}
                                                 placeholder="Pilih akun"
                                             />
+                                            <FormError message={transferForm.errors.to_account_id} />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
                                             <Label>Nominal</Label>
-                                            <Input
-                                                type="number"
-                                                min="1"
+                                            <CurrencyInput
                                                 value={transferForm.data.amount}
-                                                onChange={(event) => transferForm.setData('amount', event.target.value)}
+                                                onValueChange={(value) => transferForm.setData('amount', value)}
                                             />
+                                            <FormError message={transferForm.errors.amount} />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Tanggal</Label>
-                                            <Input
-                                                type="date"
+                                            <DatePickerInput
                                                 value={transferForm.data.transfer_date}
-                                                onChange={(event) => transferForm.setData('transfer_date', event.target.value)}
+                                                onValueChange={(value) => transferForm.setData('transfer_date', value)}
                                             />
+                                            <FormError message={transferForm.errors.transfer_date} />
                                         </div>
                                     </div>
                                     <SubmitButton processing={transferForm.processing}>Simpan Transfer</SubmitButton>
@@ -240,10 +264,12 @@ export default function TransactionsIndex({ transactions, accounts, categories }
                                 <div key={transaction.id} className="flex items-center justify-between gap-4 rounded-lg border p-4">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <p className="font-medium">{transaction.description || transaction.category?.name || 'Transaksi'}</p>
-                                            <Badge variant={transaction.type === 'income' ? 'secondary' : 'outline'}>
-                                                {transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
-                                            </Badge>
+                                            <p className="font-medium">
+                                                {transaction.type === 'saving'
+                                                    ? transaction.saving_goal?.name || transaction.description || 'Tabungan'
+                                                    : transaction.merchant || transaction.description || transaction.category?.name || 'Transaksi'}
+                                            </p>
+                                            <FinanceBadge value={transaction.type} />
                                         </div>
                                         <p className="text-muted-foreground mt-1 text-sm">
                                             {accountLabel(transaction.account)} · {transaction.category?.name} ·{' '}
@@ -254,7 +280,11 @@ export default function TransactionsIndex({ transactions, accounts, categories }
                                         <MoneyDisplay
                                             value={transaction.amount}
                                             className={
-                                                transaction.type === 'income' ? 'font-semibold text-emerald-600' : 'font-semibold text-rose-600'
+                                                transaction.type === 'income'
+                                                    ? 'font-semibold text-emerald-600'
+                                                    : transaction.type === 'saving'
+                                                      ? 'font-semibold text-teal-600'
+                                                      : 'font-semibold text-rose-600'
                                             }
                                         />
                                         <button

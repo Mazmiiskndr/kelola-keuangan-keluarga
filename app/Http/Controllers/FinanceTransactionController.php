@@ -6,6 +6,7 @@ use App\Http\Requests\StoreFinanceTransactionRequest;
 use App\Models\Category;
 use App\Models\FinanceTransaction;
 use App\Models\FinancialAccount;
+use App\Models\SavingGoal;
 use App\Services\Finance\CategoryBootstrapService;
 use App\Services\Finance\TransactionService;
 use Illuminate\Http\RedirectResponse;
@@ -26,13 +27,19 @@ class FinanceTransactionController extends Controller
 
         return Inertia::render('transactions/index', [
             'transactions' => FinanceTransaction::query()
-                ->with(['account', 'category'])
+                ->with(['account', 'category', 'savingGoal.account'])
                 ->where('user_id', $request->user()->id)
                 ->latest('transaction_date')
                 ->paginate(20)
                 ->withQueryString(),
             'accounts' => FinancialAccount::query()->where('user_id', $request->user()->id)->where('is_active', true)->get(),
             'categories' => Category::query()->where('user_id', $request->user()->id)->orderBy('type')->orderBy('name')->get(),
+            'savingGoals' => SavingGoal::query()
+                ->with('account')
+                ->where('user_id', $request->user()->id)
+                ->where('status', 'active')
+                ->latest()
+                ->get(),
         ]);
     }
 
@@ -40,7 +47,16 @@ class FinanceTransactionController extends Controller
     {
         $payload = $this->transactions->normalizePayload($request->validated(), $request->user()->id);
         $account = FinancialAccount::query()->where('user_id', $request->user()->id)->findOrFail($payload['financial_account_id']);
-        $category = Category::query()->where('user_id', $request->user()->id)->findOrFail($payload['category_id']);
+        $category = $payload['type'] === 'saving'
+            ? $this->savingCategory($request)
+            : Category::query()->where('user_id', $request->user()->id)->findOrFail($payload['category_id']);
+
+        if ($payload['type'] === 'saving') {
+            SavingGoal::query()
+                ->where('user_id', $request->user()->id)
+                ->where('status', 'active')
+                ->findOrFail($payload['saving_goal_id']);
+        }
 
         $payload['family_id'] = $account->family_id;
         $payload['category_id'] = $category->id;
@@ -48,6 +64,25 @@ class FinanceTransactionController extends Controller
         $this->transactions->create($payload);
 
         return back()->with('success', 'Transaksi berhasil disimpan.');
+    }
+
+    private function savingCategory(Request $request): Category
+    {
+        return Category::query()->firstOrCreate(
+            [
+                'user_id' => $request->user()->id,
+                'name' => 'Tabungan',
+            ],
+            [
+                'type' => 'expense',
+                'color' => '#14b8a6',
+                'icon' => 'PiggyBank',
+                'is_default' => true,
+                'is_essential' => false,
+                'is_savable' => false,
+                'is_lifestyle' => false,
+            ],
+        );
     }
 
     public function destroy(Request $request, FinanceTransaction $transaction): RedirectResponse

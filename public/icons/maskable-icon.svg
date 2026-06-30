@@ -1,7 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kelola Keuangan">
-    <rect width="512" height="512" fill="#0f172a"/>
-    <rect x="116" y="116" width="280" height="280" rx="64" fill="#f8fafc"/>
-    <path d="M176 196h160M176 252h160M176 308h96" stroke="#0f172a" stroke-width="28" stroke-linecap="round"/>
-    <circle cx="342" cy="322" r="50" fill="#14b8a6"/>
-    <path d="M328 322h28m-14-14v28" stroke="#fff" stroke-width="16" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kelola Keuangan Keluarga">
+    <defs>
+        <linearGradient id="bg" x1="44" x2="468" y1="44" y2="468" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#111827"/>
+            <stop offset="1" stop-color="#020617"/>
+        </linearGradient>
+        <linearGradient id="accent" x1="176" x2="384" y1="172" y2="340" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#22d3ee"/>
+            <stop offset="1" stop-color="#10b981"/>
+        </linearGradient>
+    </defs>
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <rect x="112" y="144" width="248" height="184" rx="44" fill="#f8fafc"/>
+    <rect x="148" y="188" width="160" height="20" rx="10" fill="#0f172a"/>
+    <rect x="148" y="238" width="102" height="20" rx="10" fill="#0f172a"/>
+    <path d="M292 340c38-52 70-82 118-116" stroke="url(#accent)" stroke-width="36" stroke-linecap="round"/>
+    <path d="M398 224v88h-88" stroke="url(#accent)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="152" cy="368" r="30" fill="#22d3ee"/>
+    <circle cx="224" cy="368" r="30" fill="#10b981"/>
 </svg>

@@ -1,21 +1,24 @@
+import { CurrencyInput } from '@/components/finance/currency-input';
 import { DateTimeDisplay } from '@/components/finance/date-display';
+import { DatePickerInput } from '@/components/finance/date-picker-input';
+import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
 import { ProgressRow } from '@/components/finance/progress-row';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
+import { toDateInputValue, toFormString } from '@/lib/form-values';
 import { type BreadcrumbItem } from '@/types';
 import { type Category, type Debt, type FinancialAccount } from '@/types/finance';
 import { Head, router, useForm } from '@inertiajs/react';
-import { HandCoins, Trash2 } from 'lucide-react';
-import type React from 'react';
+import { HandCoins, Pencil, Trash2, X } from 'lucide-react';
+import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Hutang', href: '/debts' }];
 
@@ -26,6 +29,7 @@ interface DebtsProps {
 }
 
 export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) {
+    const [editingDebtId, setEditingDebtId] = useState<number | null>(null);
     const form = useForm({
         name: '',
         type: 'installment',
@@ -61,21 +65,63 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
-        form.post('/debts', {
+        const options = {
             preserveScroll: true,
-            onSuccess: () =>
-                form.reset(
-                    'name',
-                    'lender',
-                    'principal_amount',
-                    'outstanding_amount',
-                    'monthly_payment',
-                    'minimum_payment',
-                    'tenor_months',
-                    'remaining_tenor_months',
-                    'due_day',
-                    'next_due_date',
-                ),
+            onSuccess: () => resetDebtForm(),
+        };
+
+        if (editingDebtId) {
+            form.put(`/debts/${editingDebtId}`, options);
+
+            return;
+        }
+
+        form.post('/debts', options);
+    }
+
+    function resetDebtForm() {
+        setEditingDebtId(null);
+        form.setData({
+            name: '',
+            type: 'installment',
+            lender: '',
+            principal_amount: '',
+            outstanding_amount: '',
+            monthly_payment: '',
+            minimum_payment: '',
+            interest_rate: '0',
+            start_date: '',
+            tenor_months: '',
+            remaining_tenor_months: '',
+            due_day: '',
+            next_due_date: '',
+            payment_account_id: accounts[0]?.id?.toString() ?? '',
+            category_id: categories[0]?.id?.toString() ?? '',
+            auto_generate_expense: true,
+            include_in_monthly_expense: true,
+        });
+    }
+
+    function editDebt(debt: Debt) {
+        setEditingDebtId(debt.id);
+        form.setData({
+            name: debt.name,
+            type: debt.type,
+            lender: debt.lender ?? '',
+            principal_amount: toFormString(debt.principal_amount),
+            outstanding_amount: toFormString(debt.outstanding_amount),
+            monthly_payment: toFormString(debt.monthly_payment),
+            minimum_payment: toFormString(debt.minimum_payment),
+            interest_rate: toFormString(debt.interest_rate),
+            start_date: toDateInputValue(debt.start_date),
+            tenor_months: toFormString(debt.tenor_months),
+            remaining_tenor_months: toFormString(debt.remaining_tenor_months),
+            due_day: toFormString(debt.due_day),
+            next_due_date: toDateInputValue(debt.next_due_date),
+            payment_account_id: debt.payment_account_id?.toString() ?? debt.payment_account?.id?.toString() ?? '',
+            category_id: debt.category_id?.toString() ?? debt.category?.id?.toString() ?? '',
+            auto_generate_expense: Boolean(debt.auto_generate_expense),
+            include_in_monthly_expense: Boolean(debt.include_in_monthly_expense),
         });
     }
 
@@ -104,7 +150,19 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                     <div className="space-y-4">
                         <Card className="rounded-lg">
                             <CardHeader>
-                                <CardTitle>Tambah Hutang</CardTitle>
+                                <div className="flex items-center justify-between gap-3">
+                                    <CardTitle>{editingDebtId ? 'Edit Hutang' : 'Tambah Hutang'}</CardTitle>
+                                    {editingDebtId && (
+                                        <button
+                                            type="button"
+                                            className="text-muted-foreground rounded-md p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white"
+                                            onClick={resetDebtForm}
+                                            aria-label="Batal edit hutang"
+                                        >
+                                            <X className="size-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <form className="space-y-4" onSubmit={submit}>
@@ -139,31 +197,25 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
                                             <Label>Pokok hutang</Label>
-                                            <Input
-                                                type="number"
-                                                min="1"
+                                            <CurrencyInput
                                                 value={form.data.principal_amount}
-                                                onChange={(event) => form.setData('principal_amount', event.target.value)}
+                                                onValueChange={(value) => form.setData('principal_amount', value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Sisa hutang</Label>
-                                            <Input
-                                                type="number"
-                                                min="0"
+                                            <CurrencyInput
                                                 value={form.data.outstanding_amount}
-                                                onChange={(event) => form.setData('outstanding_amount', event.target.value)}
+                                                onValueChange={(value) => form.setData('outstanding_amount', value)}
                                             />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
                                             <Label>Cicilan bulanan</Label>
-                                            <Input
-                                                type="number"
-                                                min="1"
+                                            <CurrencyInput
                                                 value={form.data.monthly_payment}
-                                                onChange={(event) => form.setData('monthly_payment', event.target.value)}
+                                                onValueChange={(value) => form.setData('monthly_payment', value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -172,9 +224,12 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                                 type="number"
                                                 min="0"
                                                 max="100"
+                                                step="0.01"
+                                                inputMode="decimal"
                                                 value={form.data.interest_rate}
                                                 onChange={(event) => form.setData('interest_rate', event.target.value)}
                                             />
+                                            <FormError message={form.errors.interest_rate} />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
@@ -206,10 +261,9 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
                                             <Label>Jatuh tempo</Label>
-                                            <Input
-                                                type="date"
+                                            <DatePickerInput
                                                 value={form.data.next_due_date}
-                                                onChange={(event) => form.setData('next_due_date', event.target.value)}
+                                                onValueChange={(value) => form.setData('next_due_date', value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -229,7 +283,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                         />{' '}
                                         Masukkan ke pengeluaran wajib bulanan
                                     </label>
-                                    <SubmitButton processing={form.processing}>Simpan Hutang</SubmitButton>
+                                    <SubmitButton processing={form.processing}>{editingDebtId ? 'Perbarui Hutang' : 'Simpan Hutang'}</SubmitButton>
                                 </form>
                             </CardContent>
                         </Card>
@@ -265,19 +319,16 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
                                             <Label>Nominal bayar</Label>
-                                            <Input
-                                                type="number"
-                                                min="1"
+                                            <CurrencyInput
                                                 value={paymentForm.data.amount}
-                                                onChange={(event) => paymentForm.setData('amount', event.target.value)}
+                                                onValueChange={(value) => paymentForm.setData('amount', value)}
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Tanggal bayar</Label>
-                                            <Input
-                                                type="date"
+                                            <DatePickerInput
                                                 value={paymentForm.data.paid_at}
-                                                onChange={(event) => paymentForm.setData('paid_at', event.target.value)}
+                                                onValueChange={(value) => paymentForm.setData('paid_at', value)}
                                             />
                                         </div>
                                     </div>
@@ -298,20 +349,29 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                         <div>
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <p className="font-medium">{debt.name}</p>
-                                                <Badge variant="outline">{debt.type}</Badge>
-                                                <Badge variant="secondary">{debt.status}</Badge>
+                                                <FinanceBadge value={debt.type} />
+                                                <FinanceBadge value={debt.status} />
                                             </div>
                                             <p className="text-muted-foreground mt-1 text-sm">
                                                 {debt.lender || 'Tanpa lender'} · jatuh tempo <DateTimeDisplay value={debt.next_due_date} />
                                             </p>
                                         </div>
-                                        <button
-                                            className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                            onClick={() => router.delete(`/debts/${debt.id}`, { preserveScroll: true })}
-                                            aria-label="Arsipkan hutang"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                                onClick={() => editDebt(debt)}
+                                                aria-label="Edit hutang"
+                                            >
+                                                <Pencil className="size-4" />
+                                            </button>
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
+                                                onClick={() => router.delete(`/debts/${debt.id}`, { preserveScroll: true })}
+                                                aria-label="Arsipkan hutang"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                                         <ProgressRow

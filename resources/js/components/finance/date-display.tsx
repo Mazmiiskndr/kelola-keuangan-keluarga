@@ -15,7 +15,7 @@ export function formatDateTime(value?: string | null, fallback = '-'): string {
         return fallback;
     }
 
-    const parts = new Intl.DateTimeFormat('en-US', {
+    const parts = new Intl.DateTimeFormat('id-ID', {
         timeZone: 'Asia/Jakarta',
         month: 'long',
         year: '2-digit',
@@ -32,7 +32,7 @@ export function formatDateTime(value?: string | null, fallback = '-'): string {
             return carry;
         }, {});
 
-    return `${parts.month}-${parts.day}-${parts.year} ${parts.hour}:${parts.minute}:${parts.second}`;
+    return `${parts.day} ${parts.month} ${parts.year} ${parts.hour}:${parts.minute}:${parts.second}`;
 }
 
 export function DateTimeDisplay({ value, fallback = '-' }: DateTimeDisplayProps) {
