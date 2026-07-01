@@ -138,7 +138,7 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
                                     <div>
                                         <p className="font-medium">{budget.category?.name ?? 'Kategori'}</p>
                                         <p className="text-muted-foreground text-sm">
-                                            <DateTimeDisplay value={budget.period_start} /> s/d <DateTimeDisplay value={budget.period_end} />
+                                            <DateTimeDisplay value={budget.period_start} dateOnly /> s/d <DateTimeDisplay value={budget.period_end} dateOnly />
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">

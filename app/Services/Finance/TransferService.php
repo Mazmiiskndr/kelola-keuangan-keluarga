@@ -17,7 +17,11 @@ class TransferService
      */
     public function create(array $data): Transfer
     {
+        $this->balances->syncTransferAccounts($data);
+
         return $this->database->transaction(function () use ($data) {
+            $this->balances->ensureTransferCanApply($data);
+
             $transfer = Transfer::query()->create($data);
             $this->balances->applyTransfer($transfer);
 

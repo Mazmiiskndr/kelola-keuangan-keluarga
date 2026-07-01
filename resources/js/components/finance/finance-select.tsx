@@ -77,7 +77,7 @@ export function FinanceSelect({
                 variant="outline"
                 aria-expanded={open}
                 role="combobox"
-                className="h-10 w-full justify-between px-3 font-normal"
+                className="h-12 w-full justify-between px-4 font-normal"
                 onClick={() => setOpen((current) => !current)}
             >
                 <span className={cn('truncate', !selectedOption && 'text-muted-foreground')}>{selectedOption?.label ?? placeholder}</span>

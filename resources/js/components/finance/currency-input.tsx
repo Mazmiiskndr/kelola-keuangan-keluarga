@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { X } from 'lucide-react';
 import { type ComponentProps } from 'react';
 
 interface CurrencyInputProps extends Omit<ComponentProps<typeof Input>, 'type' | 'value' | 'onChange'> {
@@ -30,7 +31,9 @@ function formatThousands(value: string): string {
     }).format(Number(digits));
 }
 
-export function CurrencyInput({ value, onValueChange, className, placeholder = '0', ...props }: CurrencyInputProps) {
+export function CurrencyInput({ value, onValueChange, className, placeholder = '0', disabled, readOnly, ...props }: CurrencyInputProps) {
+    const hasValue = normalizeCurrencyDigits(value).length > 0;
+
     return (
         <div className="relative">
             <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-medium">Rp.</span>
@@ -38,11 +41,23 @@ export function CurrencyInput({ value, onValueChange, className, placeholder = '
                 {...props}
                 type="text"
                 inputMode="numeric"
+                disabled={disabled}
+                readOnly={readOnly}
                 value={formatThousands(value)}
                 onChange={(event) => onValueChange(normalizeCurrencyDigits(event.target.value))}
                 placeholder={placeholder}
-                className={cn('pl-12 tabular-nums', className)}
+                className={cn('pr-10 pl-12 tabular-nums', className)}
             />
+            {hasValue && !disabled && !readOnly && (
+                <button
+                    type="button"
+                    className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-1/2 right-2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md transition-colors"
+                    onClick={() => onValueChange('')}
+                    aria-label="Clear nominal"
+                >
+                    <X className="size-4" />
+                </button>
+            )}
         </div>
     );
 }

@@ -10,6 +10,7 @@ import { StatCard } from '@/components/finance/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import { accountLabel } from '@/lib/finance-labels';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { type Family, type SummaryMetric } from '@/types/finance';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -34,6 +35,7 @@ export default function Dashboard({ summary, families }: DashboardProps) {
     const selectedFamilyId = summary.family?.id ? String(summary.family.id) : families[0]?.id ? String(families[0].id) : '';
     const ownBreakdown = memberBreakdown.find((member) => member.user_id === auth.user.id);
     const otherExpense = Math.max(summary.totals.expense - (ownBreakdown?.expense ?? 0), 0);
+    const accounts = summary.accounts ?? [];
 
     function openScope(scope: string) {
         router.get('/dashboard', scope === 'family' && selectedFamilyId ? { scope: 'family', family_id: selectedFamilyId } : {}, {
@@ -56,7 +58,7 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                     icon={WalletCards}
                     action={
                         <Badge variant="outline">
-                            Periode <DateTimeDisplay value={summary.period.start} /> s/d <DateTimeDisplay value={summary.period.end} />
+                            Periode <DateTimeDisplay value={summary.period.start} dateOnly /> s/d <DateTimeDisplay value={summary.period.end} dateOnly />
                         </Badge>
                     }
                 />
@@ -93,6 +95,34 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                     <StatCard title="Pengeluaran Bulan Ini" value={summary.totals.expense} icon={ArrowDownRight} tone="red" />
                     <StatCard title="Cicilan Jatuh Tempo" value={summary.totals.debt_due} icon={PiggyBank} tone="amber" />
                 </div>
+
+                <Card className="rounded-lg">
+                    <CardHeader>
+                        <CardTitle>Detail Saldo Akun</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {accounts.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">Belum ada akun aktif untuk ditampilkan.</p>
+                        ) : (
+                            accounts.map((account) => (
+                                <div key={account.id} className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="truncate font-medium">{accountLabel(account)}</p>
+                                            <FinanceBadge value={account.type} />
+                                        </div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            <FinanceBadge value={account.visibility} />
+                                            <FinanceBadge value={account.currency} />
+                                            {account.owner && <span className="text-muted-foreground text-xs">{account.owner}</span>}
+                                        </div>
+                                    </div>
+                                    <MoneyDisplay value={account.current_balance} className="shrink-0 font-semibold" />
+                                </div>
+                            ))
+                        )}
+                    </CardContent>
+                </Card>
 
                 {currentScope === 'family' && (
                     <div className="grid gap-4 md:grid-cols-3">
@@ -179,7 +209,7 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                                         <div className="min-w-0">
                                             <p className="truncate text-sm font-medium">{item.description || item.category || 'Pengeluaran'}</p>
                                             <p className="text-muted-foreground text-xs">
-                                                {item.category || 'Tanpa kategori'} - <DateTimeDisplay value={item.date} />
+                                                {item.category || 'Tanpa kategori'} - <DateTimeDisplay value={item.date} dateOnly />
                                                 {summary.can_view_family_details && item.member ? ` - ${item.member}` : ''}
                                             </p>
                                         </div>

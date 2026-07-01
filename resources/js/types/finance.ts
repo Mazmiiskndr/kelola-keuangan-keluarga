@@ -38,6 +38,8 @@ export interface FinanceTransaction {
     type: 'income' | 'expense' | 'saving';
     amount: MoneyValue;
     transaction_date: string;
+    created_at?: string;
+    updated_at?: string;
     description?: string;
     merchant?: string;
     visibility: string;
@@ -149,6 +151,17 @@ export interface MemberBreakdown {
     cash_flow: number;
 }
 
+export interface AccountBalanceBreakdown {
+    id: number;
+    name: string;
+    display_name?: string;
+    type: string;
+    current_balance: MoneyValue;
+    currency: string;
+    visibility: string;
+    owner?: string | null;
+}
+
 export interface SummaryMetric {
     period: { start: string; end: string };
     scope?: 'personal' | 'family';
@@ -170,6 +183,7 @@ export interface SummaryMetric {
     };
     expense_by_category: Array<{ name: string; amount: number; color: string }>;
     largest_expenses: Array<{ id: number; description?: string; category?: string; member?: string | null; amount: number; date?: string }>;
+    accounts?: AccountBalanceBreakdown[];
     trend: Array<{ key?: string; label: string; income: number; expense: number }>;
     upcoming_debts: Array<{ id: number; name: string; lender?: string; amount: number; due_date?: string }>;
     member_breakdown?: MemberBreakdown[];

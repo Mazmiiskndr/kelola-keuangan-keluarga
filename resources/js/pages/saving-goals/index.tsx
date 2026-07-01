@@ -178,7 +178,7 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                                         <div>
                                             <p className="font-medium">{goal.name}</p>
                                             <p className="text-muted-foreground text-sm">
-                                                <DateTimeDisplay value={goal.target_date} fallback="Tanpa deadline" />
+                                                <DateTimeDisplay value={goal.target_date} fallback="Tanpa deadline" dateOnly />
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2">

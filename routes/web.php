@@ -33,7 +33,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('accounts', FinancialAccountController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('categories', CategoryController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::resource('transactions', FinanceTransactionController::class)->only(['index', 'store', 'destroy']);
+    Route::resource('transactions', FinanceTransactionController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('transfers', [TransferController::class, 'store'])->name('transfers.store');
     Route::resource('budgets', BudgetController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('saving-goals', SavingGoalController::class)->only(['index', 'store', 'update', 'destroy'])->parameters(['saving-goals' => 'savingGoal']);

@@ -353,7 +353,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                                 <FinanceBadge value={debt.status} />
                                             </div>
                                             <p className="text-muted-foreground mt-1 text-sm">
-                                                {debt.lender || 'Tanpa lender'} · jatuh tempo <DateTimeDisplay value={debt.next_due_date} />
+                                                {debt.lender || 'Tanpa lender'} · jatuh tempo <DateTimeDisplay value={debt.next_due_date} dateOnly />
                                             </p>
                                         </div>
                                         <div className="flex shrink-0 items-center gap-2">

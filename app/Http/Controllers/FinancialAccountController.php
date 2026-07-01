@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreFinancialAccountRequest;
 use App\Models\FinancialAccount;
+use App\Services\Finance\AccountBalanceService;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +13,11 @@ use Inertia\Response;
 
 class FinancialAccountController extends Controller
 {
+    public function __construct(
+        private readonly DatabaseManager $database,
+        private readonly AccountBalanceService $balances,
+    ) {}
+
     public function index(Request $request): Response
     {
         return Inertia::render('accounts/index', [
@@ -44,14 +51,16 @@ class FinancialAccountController extends Controller
 
         $data = $request->validated();
         $accountName = filled($data['name'] ?? null) ? $data['name'] : $data['bank_name'].' - '.$data['account_holder_name'];
-        $balanceDelta = (float) $data['initial_balance'] - (float) $account->initial_balance;
 
-        $account->update([
-            ...$data,
-            'name' => $accountName,
-            'currency' => $data['currency'] ?? 'IDR',
-            'current_balance' => (float) $account->current_balance + $balanceDelta,
-        ]);
+        $this->database->transaction(function () use ($account, $data, $accountName) {
+            $account->update([
+                ...$data,
+                'name' => $accountName,
+                'currency' => $data['currency'] ?? 'IDR',
+            ]);
+
+            $this->balances->recalculateCurrentBalance($account);
+        });
 
         return back()->with('success', 'Akun keuangan berhasil diperbarui.');
     }

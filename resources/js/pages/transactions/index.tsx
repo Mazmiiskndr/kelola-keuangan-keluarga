@@ -4,29 +4,41 @@ import { DatePickerInput } from '@/components/finance/date-picker-input';
 import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
-import { MoneyDisplay } from '@/components/finance/money-display';
+import { formatMoney, MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
+import { toFormString } from '@/lib/form-values';
 import { type BreadcrumbItem } from '@/types';
 import { type Category, type FinanceTransaction, type FinancialAccount, type Paginated, type SavingGoal } from '@/types/finance';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowRightLeft, ReceiptText, Trash2 } from 'lucide-react';
-import type React from 'react';
+import { ArrowRightLeft, Pencil, ReceiptText, Trash2, X } from 'lucide-react';
+import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Transaksi', href: '/transactions' }];
+const nominalPresets = [10000, 20000, 30000, 40000, 50000];
+const transactionTypeFilterOptions = [
+    { value: 'all', label: 'Semua tipe' },
+    { value: 'income', label: 'Pemasukan' },
+    { value: 'expense', label: 'Pengeluaran' },
+    { value: 'saving', label: 'Tabungan' },
+];
 
 interface TransactionsProps {
     transactions: Paginated<FinanceTransaction>;
     accounts: FinancialAccount[];
     categories: Category[];
     savingGoals: SavingGoal[];
+    filters: {
+        type: string;
+    };
 }
 
-export default function TransactionsIndex({ transactions, accounts, categories, savingGoals }: TransactionsProps) {
+export default function TransactionsIndex({ transactions, accounts, categories, savingGoals, filters }: TransactionsProps) {
+    const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null);
     const form = useForm({
         financial_account_id: accounts[0]?.id?.toString() ?? '',
         category_id: categories[0]?.id?.toString() ?? '',
@@ -50,15 +62,76 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
     });
 
     const filteredCategories = form.data.type === 'saving' ? [] : categories.filter((category) => category.type === form.data.type);
+    const selectedHistoryType = filters.type || 'all';
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
-        form.post('/transactions', { preserveScroll: true, onSuccess: () => form.reset('amount', 'description', 'merchant', 'tags') });
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => resetTransactionForm(),
+        };
+
+        if (editingTransactionId) {
+            form.put(`/transactions/${editingTransactionId}`, options);
+
+            return;
+        }
+
+        form.post('/transactions', options);
     }
 
     function submitTransfer(event: React.FormEvent) {
         event.preventDefault();
         transferForm.post('/transfers', { preserveScroll: true, onSuccess: () => transferForm.reset('amount', 'description') });
+    }
+
+    function resetTransactionForm() {
+        setEditingTransactionId(null);
+        form.clearErrors();
+        form.setData({
+            financial_account_id: accounts[0]?.id?.toString() ?? '',
+            category_id: categories[0]?.id?.toString() ?? '',
+            saving_goal_id: savingGoals[0]?.id?.toString() ?? '',
+            type: 'expense',
+            amount: '',
+            transaction_date: new Date().toISOString().slice(0, 10),
+            description: '',
+            merchant: '',
+            tags: '',
+            visibility: 'private',
+            need_type: 'unclassified',
+        });
+    }
+
+    function editTransaction(transaction: FinanceTransaction) {
+        setEditingTransactionId(transaction.id);
+        form.clearErrors();
+        form.setData({
+            financial_account_id: transaction.account?.id?.toString() ?? accounts[0]?.id?.toString() ?? '',
+            category_id: transaction.category?.id?.toString() ?? '',
+            saving_goal_id: transaction.saving_goal_id?.toString() ?? transaction.saving_goal?.id?.toString() ?? savingGoals[0]?.id?.toString() ?? '',
+            type: transaction.type,
+            amount: toFormString(transaction.amount),
+            transaction_date: transaction.transaction_date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+            description: transaction.description ?? '',
+            merchant: transaction.merchant ?? '',
+            tags: '',
+            visibility: transaction.visibility ?? 'private',
+            need_type: transaction.need_type ?? 'unclassified',
+        });
+    }
+
+    function filterTransactionHistory(type: string) {
+        router.get('/transactions', type === 'all' ? {} : { type }, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+    }
+
+    function transactionTitle(transaction: FinanceTransaction) {
+        return transaction.merchant?.trim() || '-';
     }
 
     return (
@@ -71,11 +144,23 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                     icon={ReceiptText}
                 />
 
-                <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
+                <div className="grid gap-4 xl:grid-cols-[520px_1fr]">
                     <div className="space-y-4">
                         <Card className="rounded-lg">
                             <CardHeader>
-                                <CardTitle>Tambah Transaksi</CardTitle>
+                                <div className="flex items-center justify-between gap-3">
+                                    <CardTitle>{editingTransactionId ? 'Edit Transaksi' : 'Tambah Transaksi'}</CardTitle>
+                                    {editingTransactionId && (
+                                        <button
+                                            type="button"
+                                            className="text-muted-foreground rounded-md p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white"
+                                            onClick={resetTransactionForm}
+                                            aria-label="Batal edit transaksi"
+                                        >
+                                            <X className="size-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <form className="space-y-4" onSubmit={submit}>
@@ -156,6 +241,18 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                     <div className="space-y-2">
                                         <Label>Nominal</Label>
                                         <CurrencyInput value={form.data.amount} onValueChange={(value) => form.setData('amount', value)} />
+                                        <div className="flex flex-wrap gap-2">
+                                            {nominalPresets.map((amount) => (
+                                                <button
+                                                    key={amount}
+                                                    type="button"
+                                                    className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200 dark:hover:bg-blue-900/50"
+                                                    onClick={() => form.setData('amount', amount.toString())}
+                                                >
+                                                    {formatMoney(amount)}
+                                                </button>
+                                            ))}
+                                        </div>
                                         <FormError message={form.errors.amount} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
@@ -190,7 +287,9 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                             placeholder="Belanja bulanan"
                                         />
                                     </div>
-                                    <SubmitButton processing={form.processing}>Simpan Transaksi</SubmitButton>
+                                    <SubmitButton processing={form.processing}>
+                                        {editingTransactionId ? 'Perbarui Transaksi' : 'Simpan Transaksi'}
+                                    </SubmitButton>
                                 </form>
                             </CardContent>
                         </Card>
@@ -257,23 +356,37 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
 
                     <Card className="rounded-lg">
                         <CardHeader>
-                            <CardTitle>Riwayat Transaksi</CardTitle>
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <CardTitle>Riwayat Transaksi</CardTitle>
+                                <div className="w-full md:w-56">
+                                    <FinanceSelect
+                                        value={selectedHistoryType}
+                                        onValueChange={filterTransactionHistory}
+                                        options={transactionTypeFilterOptions}
+                                        searchPlaceholder="Cari tipe..."
+                                    />
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
+                            {transactions.data.length === 0 && (
+                                <p className="text-muted-foreground rounded-lg border p-4 text-sm">Belum ada transaksi untuk tipe ini.</p>
+                            )}
                             {transactions.data.map((transaction) => (
                                 <div key={transaction.id} className="flex items-center justify-between gap-4 rounded-lg border p-4">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className="font-medium">
-                                                {transaction.type === 'saving'
-                                                    ? transaction.saving_goal?.name || transaction.description || 'Tabungan'
-                                                    : transaction.merchant || transaction.description || transaction.category?.name || 'Transaksi'}
+                                                {transactionTitle(transaction)}
                                             </p>
                                             <FinanceBadge value={transaction.type} />
                                         </div>
                                         <p className="text-muted-foreground mt-1 text-sm">
                                             {accountLabel(transaction.account)} · {transaction.category?.name} ·{' '}
-                                            <DateTimeDisplay value={transaction.transaction_date} />
+                                            <DateTimeDisplay
+                                                value={transaction.transaction_date}
+                                                timeSource={transaction.updated_at ?? transaction.created_at}
+                                            />
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -287,6 +400,13 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                                       : 'font-semibold text-rose-600'
                                             }
                                         />
+                                        <button
+                                            className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                            onClick={() => editTransaction(transaction)}
+                                            aria-label="Edit transaksi"
+                                        >
+                                            <Pencil className="size-4" />
+                                        </button>
                                         <button
                                             className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
                                             onClick={() => router.delete(`/transactions/${transaction.id}`, { preserveScroll: true })}

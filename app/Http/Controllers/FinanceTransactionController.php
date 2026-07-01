@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TransactionType;
 use App\Http\Requests\StoreFinanceTransactionRequest;
 use App\Models\Category;
 use App\Models\FinanceTransaction;
@@ -24,13 +25,16 @@ class FinanceTransactionController extends Controller
     public function index(Request $request): Response
     {
         $this->categories->ensureDefaults($request->user());
+        $selectedType = $this->selectedTransactionType($request);
 
         return Inertia::render('transactions/index', [
             'transactions' => FinanceTransaction::query()
                 ->with(['account', 'category', 'savingGoal.account'])
                 ->where('user_id', $request->user()->id)
+                ->when($selectedType !== 'all', fn ($query) => $query->where('type', $selectedType))
                 ->latest('transaction_date')
-                ->paginate(20)
+                ->latest('id')
+                ->paginate(10)
                 ->withQueryString(),
             'accounts' => FinancialAccount::query()->where('user_id', $request->user()->id)->where('is_active', true)->get(),
             'categories' => Category::query()->where('user_id', $request->user()->id)->orderBy('type')->orderBy('name')->get(),
@@ -40,10 +44,44 @@ class FinanceTransactionController extends Controller
                 ->where('status', 'active')
                 ->latest()
                 ->get(),
+            'filters' => [
+                'type' => $selectedType,
+            ],
         ]);
     }
 
+    private function selectedTransactionType(Request $request): string
+    {
+        $type = $request->string('type')->toString();
+        $allowedTypes = collect(TransactionType::cases())->map->value->all();
+
+        return in_array($type, $allowedTypes, true) ? $type : 'all';
+    }
+
     public function store(StoreFinanceTransactionRequest $request): RedirectResponse
+    {
+        $payload = $this->validatedPayload($request);
+
+        $this->transactions->create($payload);
+
+        return back()->with('success', 'Transaksi berhasil disimpan.');
+    }
+
+    public function update(StoreFinanceTransactionRequest $request, FinanceTransaction $transaction): RedirectResponse
+    {
+        abort_unless($transaction->user_id === $request->user()->id, 403);
+
+        $payload = $this->validatedPayload($request);
+
+        $this->transactions->update($transaction, $payload);
+
+        return back()->with('success', 'Transaksi berhasil diperbarui.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedPayload(StoreFinanceTransactionRequest $request): array
     {
         $payload = $this->transactions->normalizePayload($request->validated(), $request->user()->id);
         $account = FinancialAccount::query()->where('user_id', $request->user()->id)->findOrFail($payload['financial_account_id']);
@@ -61,9 +99,7 @@ class FinanceTransactionController extends Controller
         $payload['family_id'] = $account->family_id;
         $payload['category_id'] = $category->id;
 
-        $this->transactions->create($payload);
-
-        return back()->with('success', 'Transaksi berhasil disimpan.');
+        return $payload;
     }
 
     private function savingCategory(Request $request): Category

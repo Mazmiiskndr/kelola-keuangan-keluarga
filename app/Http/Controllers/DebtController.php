@@ -7,6 +7,7 @@ use App\Http\Requests\StoreDebtRequest;
 use App\Models\Category;
 use App\Models\Debt;
 use App\Models\FinancialAccount;
+use App\Services\Finance\DebtDueNotificationService;
 use App\Services\Finance\DebtPaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,10 @@ use Inertia\Response;
 
 class DebtController extends Controller
 {
-    public function __construct(private readonly DebtPaymentService $payments) {}
+    public function __construct(
+        private readonly DebtPaymentService $payments,
+        private readonly DebtDueNotificationService $notifications,
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -30,13 +34,15 @@ class DebtController extends Controller
     {
         $data = $request->validated();
 
-        Debt::query()->create([
+        $debt = Debt::query()->create([
             ...$data,
             'user_id' => $request->user()->id,
             'outstanding_amount' => $data['outstanding_amount'] ?? $data['principal_amount'],
             'minimum_payment' => $data['minimum_payment'] ?? $data['monthly_payment'],
             'status' => 'active',
         ]);
+
+        $this->notifications->notify($debt);
 
         return back()->with('success', 'Hutang berhasil disimpan.');
     }
@@ -52,6 +58,8 @@ class DebtController extends Controller
             'outstanding_amount' => $data['outstanding_amount'] ?? $data['principal_amount'],
             'minimum_payment' => $data['minimum_payment'] ?? $data['monthly_payment'],
         ]);
+
+        $this->notifications->notify($debt->refresh());
 
         return back()->with('success', 'Hutang berhasil diperbarui.');
     }

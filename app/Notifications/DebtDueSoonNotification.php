@@ -23,13 +23,16 @@ class DebtDueSoonNotification extends Notification
 
     public function toDatabase(object $notifiable): DatabaseMessage
     {
+        $dueDate = $this->debt->next_due_date;
+        $isOverdue = $dueDate?->isBefore(now()->startOfDay()) ?? false;
+
         return new DatabaseMessage([
             'type' => 'debt_due_soon',
             'debt_id' => $this->debt->id,
-            'title' => 'Cicilan akan jatuh tempo',
-            'message' => $this->debt->name.' jatuh tempo pada '.$this->debt->next_due_date?->format('d - F - y H:i:s').'.',
+            'title' => $isOverdue ? 'Cicilan sudah jatuh tempo' : 'Cicilan akan jatuh tempo',
+            'message' => $this->debt->name.' jatuh tempo pada '.$dueDate?->format('d-m-y').'.',
             'amount' => (float) $this->debt->monthly_payment,
-            'due_date' => $this->debt->next_due_date?->toDateString(),
+            'due_date' => $dueDate?->toDateString(),
             'url' => '/debts',
         ]);
     }

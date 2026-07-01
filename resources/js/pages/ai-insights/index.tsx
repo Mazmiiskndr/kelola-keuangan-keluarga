@@ -62,8 +62,8 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <CardTitle>
-                                                Analisis <DateTimeDisplay value={analysis.period_start} /> -{' '}
-                                                <DateTimeDisplay value={analysis.period_end} />
+                                                Analisis <DateTimeDisplay value={analysis.period_start} dateOnly /> -{' '}
+                                                <DateTimeDisplay value={analysis.period_end} dateOnly />
                                             </CardTitle>
                                             <p className="text-muted-foreground mt-1 text-sm">
                                                 Model: {analysis.model_name || 'openai'} · {analysis.status}

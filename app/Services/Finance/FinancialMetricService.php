@@ -70,6 +70,7 @@ class FinancialMetricService
             ],
             'expense_by_category' => $this->expenseByCategory($transactions),
             'largest_expenses' => $this->largestExpenses($transactions, $isFamilyScope && ! $canViewFamilyDetails),
+            'accounts' => $this->accountsBreakdown($memberIds, $isFamilyScope && $canViewFamilyDetails),
             'trend' => $this->sixMonthTrend($memberIds, $month),
             'upcoming_debts' => $this->upcomingDebts($memberIds),
             'member_breakdown' => $isFamilyScope ? $this->memberBreakdown($family, $transactions) : [],
@@ -105,6 +106,32 @@ class FinancialMetricService
                 'member' => $anonymize ? null : $transaction->user?->name,
                 'amount' => (float) $transaction->amount,
                 'date' => $transaction->transaction_date?->toDateString(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $userIds
+     */
+    private function accountsBreakdown(array $userIds, bool $includeOwner = false): array
+    {
+        return FinancialAccount::query()
+            ->with('user:id,name')
+            ->whereIn('user_id', $userIds)
+            ->where('is_active', true)
+            ->orderByDesc('current_balance')
+            ->orderBy('bank_name')
+            ->get(['id', 'user_id', 'name', 'bank_name', 'account_holder_name', 'type', 'current_balance', 'currency', 'visibility'])
+            ->map(fn (FinancialAccount $account): array => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'display_name' => $account->display_name,
+                'type' => $account->type,
+                'current_balance' => (float) $account->current_balance,
+                'currency' => $account->currency,
+                'visibility' => $account->visibility,
+                'owner' => $includeOwner ? $account->user?->name : null,
             ])
             ->values()
             ->all();

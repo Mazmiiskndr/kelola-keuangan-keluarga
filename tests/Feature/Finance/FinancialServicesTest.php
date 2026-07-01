@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Debt;
 use App\Models\Family;
 use App\Models\FamilyMember;
+use App\Models\FinanceTransaction;
 use App\Models\FinancialAccount;
 use App\Models\SavingGoal;
 use App\Models\User;
@@ -14,6 +15,8 @@ use App\Services\Finance\DebtPaymentService;
 use App\Services\Finance\FinancialMetricService;
 use App\Services\Finance\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\DatabaseNotification;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class FinancialServicesTest extends TestCase
@@ -54,6 +57,197 @@ class FinancialServicesTest extends TestCase
         $this->assertSame(4500.0, (float) $account->refresh()->current_balance);
     }
 
+    public function test_expense_transaction_cannot_make_account_balance_negative(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 0);
+        $category = $this->category($user, 'expense', 'Belanja');
+
+        $response = $this->actingAs($user)->post('/transactions', [
+            'user_id' => $user->id,
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 100000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'essential',
+        ]);
+
+        $response->assertSessionHasErrors('amount');
+        $this->assertSame(0.0, (float) $account->refresh()->current_balance);
+        $this->assertDatabaseMissing('finance_transactions', [
+            'financial_account_id' => $account->id,
+            'amount' => 100000,
+        ]);
+    }
+
+    public function test_expense_validation_uses_recalculated_account_balance(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 0);
+        $account->forceFill(['current_balance' => 200000])->save();
+        $category = $this->category($user, 'expense', 'Belanja');
+
+        $response = $this->actingAs($user)->post('/transactions', [
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 200000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'essential',
+        ]);
+
+        $response->assertSessionHasErrors('amount');
+        $this->assertSame(0.0, (float) $account->refresh()->current_balance);
+        $this->assertDatabaseMissing('finance_transactions', [
+            'financial_account_id' => $account->id,
+            'amount' => 200000,
+        ]);
+    }
+
+    public function test_account_update_recalculates_stale_current_balance(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 0);
+        $account->forceFill(['current_balance' => 200000])->save();
+
+        $response = $this->actingAs($user)->put("/accounts/{$account->id}", [
+            'name' => 'BCA - Moch Azmi Iskandar',
+            'bank_name' => 'BCA',
+            'account_holder_name' => 'Moch Azmi Iskandar',
+            'account_number' => '1234567890',
+            'type' => 'bank',
+            'initial_balance' => 0,
+            'currency' => 'IDR',
+            'visibility' => 'private',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame(0.0, (float) $account->refresh()->current_balance);
+    }
+
+    public function test_deleting_transaction_recalculates_stale_account_balance(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 500000);
+        $category = $this->category($user, 'expense', 'Belanja');
+        $transaction = FinanceTransaction::query()->create([
+            'user_id' => $user->id,
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 200000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'essential',
+        ]);
+        $account->forceFill(['current_balance' => 999999])->save();
+
+        app(TransactionService::class)->delete($transaction);
+
+        $this->assertSame(500000.0, (float) $account->refresh()->current_balance);
+        $this->assertSoftDeleted($transaction);
+    }
+
+    public function test_transaction_can_be_updated_and_recalculates_account_balance(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 100000);
+        $category = $this->category($user, 'expense', 'Transportasi');
+
+        $transaction = app(TransactionService::class)->create([
+            'user_id' => $user->id,
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 240,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'flexible',
+            'merchant' => 'Gojek Pulang',
+        ]);
+
+        $response = $this->actingAs($user)->put("/transactions/{$transaction->id}", [
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 24000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'flexible',
+            'merchant' => 'Gojek Pulang',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame(24000.0, (float) $transaction->refresh()->amount);
+        $this->assertSame(76000.0, (float) $account->refresh()->current_balance);
+    }
+
+    public function test_transaction_history_filters_by_type_and_paginates_ten_items(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 1000000);
+        $incomeCategory = $this->category($user, 'income', 'Gaji');
+        $expenseCategory = $this->category($user, 'expense', 'Belanja');
+
+        for ($index = 0; $index < 12; $index++) {
+            FinanceTransaction::query()->create([
+                'user_id' => $user->id,
+                'financial_account_id' => $account->id,
+                'category_id' => $expenseCategory->id,
+                'type' => 'expense',
+                'amount' => 10000 + $index,
+                'transaction_date' => now()->subDays($index)->toDateString(),
+                'visibility' => 'private',
+                'need_type' => 'flexible',
+            ]);
+        }
+
+        for ($index = 0; $index < 3; $index++) {
+            FinanceTransaction::query()->create([
+                'user_id' => $user->id,
+                'financial_account_id' => $account->id,
+                'category_id' => $incomeCategory->id,
+                'type' => 'income',
+                'amount' => 100000 + $index,
+                'transaction_date' => now()->subDays($index)->toDateString(),
+                'visibility' => 'private',
+                'need_type' => 'financial',
+            ]);
+        }
+
+        $response = $this->actingAs($user)->get('/transactions?type=expense');
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('transactions/index')
+            ->where('filters.type', 'expense')
+            ->has('transactions.data', 10)
+            ->where('transactions.data.0.type', 'expense')
+        );
+    }
+
+    public function test_transfer_cannot_make_source_account_balance_negative(): void
+    {
+        $user = User::factory()->create();
+        $fromAccount = $this->account($user, 50000);
+        $toAccount = $this->account($user, 0);
+
+        $response = $this->actingAs($user)->post('/transfers', [
+            'from_account_id' => $fromAccount->id,
+            'to_account_id' => $toAccount->id,
+            'amount' => 100000,
+            'transfer_date' => now()->toDateString(),
+            'description' => 'Pindah saldo',
+        ]);
+
+        $response->assertSessionHasErrors('amount');
+        $this->assertSame(50000.0, (float) $fromAccount->refresh()->current_balance);
+        $this->assertSame(0.0, (float) $toAccount->refresh()->current_balance);
+    }
+
     public function test_debt_payment_creates_expense_and_reduces_outstanding_debt(): void
     {
         $user = User::factory()->create();
@@ -89,6 +283,72 @@ class FinancialServicesTest extends TestCase
             'type' => 'expense',
             'amount' => 1000,
         ]);
+    }
+
+    public function test_creating_overdue_debt_creates_unread_notification(): void
+    {
+        $this->travelTo(now()->setDate(2026, 7, 1)->startOfDay());
+
+        $user = User::factory()->create();
+        $account = $this->account($user, 1000000);
+        $category = $this->category($user, 'expense', 'Cicilan');
+
+        $response = $this->actingAs($user)->post('/debts', [
+            'name' => 'Headshot PayLater',
+            'type' => 'paylater',
+            'lender' => 'Kredivo',
+            'principal_amount' => 600000,
+            'outstanding_amount' => 500000,
+            'monthly_payment' => 100000,
+            'minimum_payment' => 100000,
+            'interest_rate' => 0,
+            'next_due_date' => '2026-06-30',
+            'payment_account_id' => $account->id,
+            'category_id' => $category->id,
+            'include_in_monthly_expense' => true,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $notification = DatabaseNotification::query()
+            ->where('notifiable_id', $user->id)
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertNull($notification->read_at);
+        $this->assertSame('Cicilan sudah jatuh tempo', $notification->data['title']);
+        $this->assertSame('2026-06-30', $notification->data['due_date']);
+    }
+
+    public function test_debt_due_command_includes_overdue_debts_once(): void
+    {
+        $this->travelTo(now()->setDate(2026, 7, 1)->startOfDay());
+
+        $user = User::factory()->create();
+
+        Debt::query()->create([
+            'user_id' => $user->id,
+            'name' => 'KPR',
+            'type' => 'installment',
+            'principal_amount' => 1000000,
+            'outstanding_amount' => 900000,
+            'monthly_payment' => 100000,
+            'minimum_payment' => 100000,
+            'interest_rate' => 0,
+            'next_due_date' => '2026-06-30',
+            'include_in_monthly_expense' => true,
+            'status' => 'active',
+        ]);
+
+        $this->artisan('finance:send-debt-due-notifications')
+            ->expectsOutput('1 notification cicilan dikirim.')
+            ->assertExitCode(0);
+
+        $this->artisan('finance:send-debt-due-notifications')
+            ->expectsOutput('0 notification cicilan dikirim.')
+            ->assertExitCode(0);
+
+        $this->assertSame(1, DatabaseNotification::query()->where('notifiable_id', $user->id)->count());
     }
 
     public function test_transfer_moves_balance_between_accounts(): void
