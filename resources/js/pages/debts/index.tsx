@@ -7,6 +7,7 @@ import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
 import { ProgressRow } from '@/components/finance/progress-row';
+import { RequiredLabel } from '@/components/finance/required-label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -167,7 +168,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                             <CardContent>
                                 <form className="space-y-4" onSubmit={submit}>
                                     <div className="space-y-2">
-                                        <Label>Nama</Label>
+                                        <RequiredLabel>Nama</RequiredLabel>
                                         <Input
                                             value={form.data.name}
                                             onChange={(event) => form.setData('name', event.target.value)}
@@ -177,7 +178,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Tipe</Label>
+                                            <RequiredLabel>Tipe</RequiredLabel>
                                             <FinanceSelect
                                                 value={form.data.type}
                                                 onValueChange={(value) => form.setData('type', value)}
@@ -196,7 +197,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Pokok hutang</Label>
+                                            <RequiredLabel>Pokok hutang</RequiredLabel>
                                             <CurrencyInput
                                                 value={form.data.principal_amount}
                                                 onValueChange={(value) => form.setData('principal_amount', value)}
@@ -212,7 +213,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Cicilan bulanan</Label>
+                                            <RequiredLabel>Cicilan bulanan</RequiredLabel>
                                             <CurrencyInput
                                                 value={form.data.monthly_payment}
                                                 onValueChange={(value) => form.setData('monthly_payment', value)}
@@ -295,7 +296,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                             <CardContent>
                                 <form className="space-y-4" onSubmit={pay}>
                                     <div className="space-y-2">
-                                        <Label>Hutang</Label>
+                                        <RequiredLabel>Hutang</RequiredLabel>
                                         <FinanceSelect
                                             value={paymentForm.data.debt_id}
                                             onValueChange={(value) => {
@@ -318,7 +319,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Nominal bayar</Label>
+                                            <RequiredLabel>Nominal bayar</RequiredLabel>
                                             <CurrencyInput
                                                 value={paymentForm.data.amount}
                                                 onValueChange={(value) => paymentForm.setData('amount', value)}

@@ -2,6 +2,7 @@ import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
+import { RequiredLabel } from '@/components/finance/required-label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -100,7 +101,7 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Nama</Label>
+                                    <RequiredLabel htmlFor="name">Nama</RequiredLabel>
                                     <Input
                                         id="name"
                                         value={form.data.name}
@@ -110,7 +111,7 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                                     <FormError message={form.errors.name} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="type">Tipe</Label>
+                                    <RequiredLabel htmlFor="type">Tipe</RequiredLabel>
                                     <FinanceSelect
                                         value={form.data.type}
                                         onValueChange={(value) => form.setData('type', value)}

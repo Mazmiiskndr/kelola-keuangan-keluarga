@@ -7,6 +7,7 @@ import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
 import { ProgressRow } from '@/components/finance/progress-row';
+import { RequiredLabel } from '@/components/finance/required-label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,7 +104,7 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
-                                    <Label>Nama target</Label>
+                                    <RequiredLabel>Nama target</RequiredLabel>
                                     <Input
                                         value={form.data.name}
                                         onChange={(event) => form.setData('name', event.target.value)}
@@ -128,7 +129,7 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-2">
-                                        <Label>Target</Label>
+                                        <RequiredLabel>Target</RequiredLabel>
                                         <CurrencyInput
                                             value={form.data.target_amount}
                                             onValueChange={(value) => form.setData('target_amount', value)}
@@ -151,7 +152,7 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Prioritas</Label>
+                                        <RequiredLabel>Prioritas</RequiredLabel>
                                         <FinanceSelect
                                             value={form.data.priority}
                                             onValueChange={(value) => form.setData('priority', value)}

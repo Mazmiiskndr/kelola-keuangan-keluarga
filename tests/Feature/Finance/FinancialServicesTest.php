@@ -52,6 +52,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Belanja',
         ]);
 
         $this->assertSame(4500.0, (float) $account->refresh()->current_balance);
@@ -72,6 +73,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Belanja',
         ]);
 
         $response->assertSessionHasErrors('amount');
@@ -97,6 +99,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Belanja',
         ]);
 
         $response->assertSessionHasErrors('amount');
@@ -104,6 +107,30 @@ class FinancialServicesTest extends TestCase
         $this->assertDatabaseMissing('finance_transactions', [
             'financial_account_id' => $account->id,
             'amount' => 200000,
+        ]);
+    }
+
+    public function test_transaction_title_is_required(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 100000);
+        $category = $this->category($user, 'expense', 'Belanja');
+
+        $response = $this->actingAs($user)->post('/transactions', [
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 50000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'essential',
+            'merchant' => '',
+        ]);
+
+        $response->assertSessionHasErrors('merchant');
+        $this->assertDatabaseMissing('finance_transactions', [
+            'financial_account_id' => $account->id,
+            'amount' => 50000,
         ]);
     }
 
@@ -142,6 +169,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Belanja',
         ]);
         $account->forceFill(['current_balance' => 999999])->save();
 
@@ -444,6 +472,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Rumah',
         ]);
 
         Debt::query()->create([
@@ -505,6 +534,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Belanja',
         ]);
 
         app(TransactionService::class)->create([
@@ -516,6 +546,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Belanja',
         ]);
 
         app(TransactionService::class)->create([
@@ -527,6 +558,7 @@ class FinancialServicesTest extends TestCase
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Belanja',
         ]);
 
         $summary = app(FinancialMetricService::class)->monthlySummary($admin, now()->format('Y-m'), 'family', $family->load('members.user'));
@@ -537,27 +569,170 @@ class FinancialServicesTest extends TestCase
         $this->assertSame(['Azmi', 'Istri'], collect($summary['member_breakdown'])->pluck('name')->all());
     }
 
-    public function test_user_cannot_create_transaction_from_another_family_members_account(): void
+    public function test_user_cannot_create_transaction_from_unrelated_users_private_account(): void
     {
         $user = User::factory()->create();
-        $spouse = User::factory()->create();
-        $family = $this->family($user);
-        $this->familyMember($family, $spouse, 'member');
-        $spouseAccount = $this->account($spouse, 3000000);
+        $otherUser = User::factory()->create();
+        $otherAccount = $this->account($otherUser, 3000000);
         $category = $this->category($user, 'expense', 'Belanja');
 
         $response = $this->actingAs($user)->post('/transactions', [
-            'financial_account_id' => $spouseAccount->id,
+            'financial_account_id' => $otherAccount->id,
             'category_id' => $category->id,
             'type' => 'expense',
             'amount' => 100000,
             'transaction_date' => now()->toDateString(),
             'visibility' => 'private',
             'need_type' => 'essential',
+            'merchant' => 'Rumah',
         ]);
 
-        $response->assertNotFound();
-        $this->assertSame(3000000.0, (float) $spouseAccount->refresh()->current_balance);
+        $response->assertForbidden();
+        $this->assertSame(3000000.0, (float) $otherAccount->refresh()->current_balance);
+    }
+
+    public function test_family_member_can_create_transaction_from_shared_family_account(): void
+    {
+        $owner = User::factory()->create(['name' => 'Azmi']);
+        $member = User::factory()->create(['name' => 'Budi']);
+        $family = $this->family($owner);
+        $this->familyMember($family, $member, 'member');
+        $sharedAccount = $this->account($owner, 3000000, [
+            'family_id' => $family->id,
+            'visibility' => 'family',
+        ]);
+        $category = $this->category($member, 'expense', 'Belanja');
+
+        $response = $this->actingAs($member)->post('/transactions', [
+            'financial_account_id' => $sharedAccount->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 100000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'essential',
+            'merchant' => 'Belanja',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame(2900000.0, (float) $sharedAccount->refresh()->current_balance);
+        $this->assertDatabaseHas('finance_transactions', [
+            'user_id' => $member->id,
+            'family_id' => $family->id,
+            'financial_account_id' => $sharedAccount->id,
+            'visibility' => 'family',
+            'amount' => 100000,
+        ]);
+
+        $this->actingAs($owner)->get('/transactions')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/index')
+                ->where('transactions.data.0.user.name', 'Budi')
+            );
+    }
+
+    public function test_family_owner_can_create_transaction_from_member_shared_family_account(): void
+    {
+        $owner = User::factory()->create(['name' => 'Azmi']);
+        $member = User::factory()->create(['name' => 'Budi']);
+        $family = $this->family($owner);
+        $this->familyMember($family, $member, 'member');
+        $memberAccount = $this->account($member, 1500000, [
+            'family_id' => $family->id,
+            'visibility' => 'family',
+        ]);
+        $category = $this->category($owner, 'expense', 'Rumah');
+
+        $response = $this->actingAs($owner)->post('/transactions', [
+            'financial_account_id' => $memberAccount->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 250000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'essential',
+            'merchant' => 'Rumah',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame(1250000.0, (float) $memberAccount->refresh()->current_balance);
+        $this->assertDatabaseHas('finance_transactions', [
+            'user_id' => $owner->id,
+            'family_id' => $family->id,
+            'financial_account_id' => $memberAccount->id,
+            'visibility' => 'family',
+            'amount' => 250000,
+        ]);
+    }
+
+    public function test_family_owner_can_use_member_private_account_through_active_family_membership(): void
+    {
+        $owner = User::factory()->create(['name' => 'Azmi']);
+        $member = User::factory()->create(['name' => 'Rara']);
+        $family = $this->family($owner);
+        $this->familyMember($family, $member, 'member');
+        $memberAccount = $this->account($member, 8216000);
+        $category = $this->category($owner, 'expense', 'Belanja');
+
+        $this->actingAs($owner)->get('/transactions')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/index')
+                ->where('accounts.0.id', $memberAccount->id)
+            );
+
+        $response = $this->actingAs($owner)->post('/transactions', [
+            'financial_account_id' => $memberAccount->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 216000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'essential',
+            'merchant' => 'Belanja',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame(8000000.0, (float) $memberAccount->refresh()->current_balance);
+        $this->assertDatabaseHas('finance_transactions', [
+            'user_id' => $owner->id,
+            'family_id' => $family->id,
+            'financial_account_id' => $memberAccount->id,
+            'visibility' => 'family',
+            'amount' => 216000,
+        ]);
+    }
+
+    public function test_family_member_can_update_shared_account_balance(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $family = $this->family($owner);
+        $this->familyMember($family, $member, 'member');
+        $sharedAccount = $this->account($owner, 3000000, [
+            'family_id' => $family->id,
+            'visibility' => 'family',
+        ]);
+
+        $response = $this->actingAs($member)->put("/accounts/{$sharedAccount->id}", [
+            'name' => 'BCA - Keluarga',
+            'bank_name' => 'BCA',
+            'account_holder_name' => 'Keluarga',
+            'account_number' => '1234567890',
+            'type' => 'bank',
+            'initial_balance' => 3500000,
+            'currency' => 'IDR',
+            'visibility' => 'private',
+            'family_id' => $family->id,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $sharedAccount->refresh();
+
+        $this->assertSame(3500000.0, (float) $sharedAccount->current_balance);
+        $this->assertSame('family', $sharedAccount->visibility);
+        $this->assertSame($family->id, $sharedAccount->family_id);
     }
 
     public function test_family_admin_can_add_existing_user_as_member(): void
@@ -607,7 +782,10 @@ class FinancialServicesTest extends TestCase
         $this->assertGreaterThan(0, $analysis->aiRecommendations()->count());
     }
 
-    private function account(User $user, int $balance): FinancialAccount
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function account(User $user, int $balance, array $overrides = []): FinancialAccount
     {
         return FinancialAccount::query()->create([
             'user_id' => $user->id,
@@ -621,6 +799,7 @@ class FinancialServicesTest extends TestCase
             'currency' => 'IDR',
             'visibility' => 'private',
             'is_active' => true,
+            ...$overrides,
         ]);
     }
 

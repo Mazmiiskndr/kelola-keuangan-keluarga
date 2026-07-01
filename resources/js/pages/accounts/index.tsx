@@ -4,6 +4,7 @@ import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
+import { RequiredLabel } from '@/components/finance/required-label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
 import { toFormString } from '@/lib/form-values';
 import { type BreadcrumbItem } from '@/types';
-import { type FinancialAccount } from '@/types/finance';
+import { type Family, type FinancialAccount } from '@/types/finance';
 import { Head, router, useForm } from '@inertiajs/react';
 import { CreditCard, Pencil, Trash2, X } from 'lucide-react';
 import { useState, type React } from 'react';
@@ -38,10 +39,13 @@ const institutionOptions = [
 
 interface AccountsProps {
     accounts: FinancialAccount[];
+    families: Family[];
 }
 
-export default function AccountsIndex({ accounts }: AccountsProps) {
+export default function AccountsIndex({ accounts, families }: AccountsProps) {
     const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
+    const editingAccount = accounts.find((account) => account.id === editingAccountId);
+    const canChangeSharing = !editingAccount || editingAccount.can_delete !== false;
     const form = useForm({
         name: '',
         bank_name: 'BCA',
@@ -51,6 +55,7 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
         initial_balance: '',
         currency: 'IDR',
         visibility: 'private',
+        family_id: families[0]?.id?.toString() ?? '',
     });
 
     function submit(event: React.FormEvent) {
@@ -81,6 +86,7 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
             initial_balance: '',
             currency: 'IDR',
             visibility: 'private',
+            family_id: families[0]?.id?.toString() ?? '',
         });
     }
 
@@ -95,6 +101,7 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
             initial_balance: toFormString(account.initial_balance),
             currency: account.currency ?? 'IDR',
             visibility: account.visibility ?? 'private',
+            family_id: account.family_id?.toString() ?? families[0]?.id?.toString() ?? '',
         });
     }
 
@@ -128,7 +135,7 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
-                                    <Label htmlFor="type">Tipe</Label>
+                                    <RequiredLabel htmlFor="type">Tipe</RequiredLabel>
                                     <FinanceSelect
                                         value={form.data.type}
                                         onValueChange={(value) => form.setData('type', value)}
@@ -143,7 +150,7 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                     <FormError message={form.errors.type} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="bank_name">Bank / Penyedia</Label>
+                                    <RequiredLabel htmlFor="bank_name">Bank / Penyedia</RequiredLabel>
                                     <FinanceSelect
                                         value={form.data.bank_name}
                                         onValueChange={(value) => form.setData('bank_name', value)}
@@ -153,7 +160,7 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                     <FormError message={form.errors.bank_name} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="account_holder_name">Nama pemilik rekening</Label>
+                                    <RequiredLabel htmlFor="account_holder_name">Nama pemilik rekening</RequiredLabel>
                                     <Input
                                         id="account_holder_name"
                                         value={form.data.account_holder_name}
@@ -183,7 +190,7 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                     <FormError message={form.errors.name} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="initial_balance">Saldo awal</Label>
+                                    <RequiredLabel htmlFor="initial_balance">{editingAccountId ? 'Saldo akun' : 'Saldo awal'}</RequiredLabel>
                                     <CurrencyInput
                                         id="initial_balance"
                                         value={form.data.initial_balance}
@@ -191,6 +198,37 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                     />
                                     <FormError message={form.errors.initial_balance} />
                                 </div>
+                                {canChangeSharing && (
+                                    <>
+                                        <div className="space-y-2">
+                                            <RequiredLabel>Visibilitas</RequiredLabel>
+                                            <FinanceSelect
+                                                value={form.data.visibility}
+                                                onValueChange={(value) => form.setData('visibility', value)}
+                                                options={[
+                                                    { value: 'private', label: 'Pribadi' },
+                                                    { value: 'family', label: 'Keluarga' },
+                                                ]}
+                                            />
+                                            <FormError message={form.errors.visibility} />
+                                        </div>
+                                        {form.data.visibility === 'family' && (
+                                            <div className="space-y-2">
+                                                <RequiredLabel>Keluarga</RequiredLabel>
+                                                <FinanceSelect
+                                                    value={form.data.family_id}
+                                                    onValueChange={(value) => form.setData('family_id', value)}
+                                                    options={families.map((family) => ({
+                                                        value: family.id.toString(),
+                                                        label: family.name,
+                                                    }))}
+                                                    placeholder="Pilih keluarga"
+                                                />
+                                                <FormError message={form.errors.family_id} />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                                 <SubmitButton processing={form.processing}>{editingAccountId ? 'Perbarui Rekening' : 'Simpan Rekening'}</SubmitButton>
                             </form>
                         </CardContent>
@@ -212,6 +250,9 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                             {account.account_number && (
                                                 <span className="text-muted-foreground text-sm">{account.account_number}</span>
                                             )}
+                                            {(account.owner?.name || account.user?.name) && (
+                                                <span className="text-muted-foreground text-sm">Pemilik: {account.owner?.name ?? account.user?.name}</span>
+                                            )}
                                             <FinanceBadge value={account.visibility} />
                                             <FinanceBadge value={account.currency} />
                                         </div>
@@ -222,20 +263,24 @@ export default function AccountsIndex({ accounts }: AccountsProps) {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <MoneyDisplay value={account.current_balance} className="font-semibold" />
-                                        <button
-                                            className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
-                                            onClick={() => editAccount(account)}
-                                            aria-label="Edit rekening"
-                                        >
-                                            <Pencil className="size-4" />
-                                        </button>
-                                        <button
-                                            className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                            onClick={() => router.delete(`/accounts/${account.id}`, { preserveScroll: true })}
-                                            aria-label="Arsipkan rekening"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                        {account.can_edit !== false && (
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                                onClick={() => editAccount(account)}
+                                                aria-label="Edit rekening"
+                                            >
+                                                <Pencil className="size-4" />
+                                            </button>
+                                        )}
+                                        {account.can_delete !== false && (
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
+                                                onClick={() => router.delete(`/accounts/${account.id}`, { preserveScroll: true })}
+                                                aria-label="Arsipkan rekening"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}

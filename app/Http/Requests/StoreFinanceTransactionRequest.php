@@ -21,7 +21,7 @@ class StoreFinanceTransactionRequest extends FormRequest
             'amount' => ['required', 'numeric', 'min:1'],
             'transaction_date' => ['required', 'date'],
             'description' => ['nullable', 'string', 'max:255'],
-            'merchant' => ['nullable', 'string', 'max:120'],
+            'merchant' => ['required', 'string', 'max:120'],
             'tags' => ['nullable', 'string', 'max:255'],
             'visibility' => ['required', 'in:private,family,shared_goal'],
             'need_type' => ['required', 'in:essential,flexible,lifestyle,financial,unclassified'],

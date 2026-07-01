@@ -6,6 +6,7 @@ import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { formatMoney, MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
+import { RequiredLabel } from '@/components/finance/required-label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,7 +50,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
         description: '',
         merchant: '',
         tags: '',
-        visibility: 'private',
+        visibility: accounts[0]?.visibility === 'family' ? 'family' : 'private',
         need_type: 'unclassified',
     });
 
@@ -99,7 +100,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
             description: '',
             merchant: '',
             tags: '',
-            visibility: 'private',
+            visibility: accounts[0]?.visibility === 'family' ? 'family' : 'private',
             need_type: 'unclassified',
         });
     }
@@ -134,6 +135,20 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
         return transaction.merchant?.trim() || '-';
     }
 
+    function setSelectedAccount(accountId: string) {
+        const selectedAccount = accounts.find((account) => account.id.toString() === accountId);
+
+        form.setData((data) => ({
+            ...data,
+            financial_account_id: accountId,
+            visibility: selectedAccount?.visibility === 'family' ? 'family' : data.visibility,
+        }));
+    }
+
+    function transactionCreator(transaction: FinanceTransaction) {
+        return transaction.user?.name || transaction.user?.email || 'User';
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Transaksi" />
@@ -166,7 +181,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                 <form className="space-y-4" onSubmit={submit}>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Tipe</Label>
+                                            <RequiredLabel>Tipe</RequiredLabel>
                                             <FinanceSelect
                                                 value={form.data.type}
                                                 onValueChange={(nextType) => {
@@ -189,7 +204,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Tanggal</Label>
+                                            <RequiredLabel>Tanggal</RequiredLabel>
                                             <DatePickerInput
                                                 value={form.data.transaction_date}
                                                 onValueChange={(value) => form.setData('transaction_date', value)}
@@ -197,10 +212,10 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>{form.data.type === 'saving' ? 'Akun sumber' : 'Akun'}</Label>
+                                        <RequiredLabel>{form.data.type === 'saving' ? 'Akun sumber' : 'Akun'}</RequiredLabel>
                                         <FinanceSelect
                                             value={form.data.financial_account_id}
-                                            onValueChange={(value) => form.setData('financial_account_id', value)}
+                                            onValueChange={setSelectedAccount}
                                             options={accounts.map((account) => ({
                                                 value: account.id.toString(),
                                                 label: accountLabel(account, true),
@@ -211,7 +226,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                     </div>
                                     {form.data.type === 'saving' ? (
                                         <div className="space-y-2">
-                                            <Label>Target tabungan</Label>
+                                            <RequiredLabel>Target tabungan</RequiredLabel>
                                             <FinanceSelect
                                                 value={form.data.saving_goal_id}
                                                 onValueChange={(value) => form.setData('saving_goal_id', value)}
@@ -225,7 +240,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
-                                            <Label>Kategori</Label>
+                                            <RequiredLabel>Kategori</RequiredLabel>
                                             <FinanceSelect
                                                 value={form.data.category_id}
                                                 onValueChange={(value) => form.setData('category_id', value)}
@@ -239,7 +254,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                         </div>
                                     )}
                                     <div className="space-y-2">
-                                        <Label>Nominal</Label>
+                                        <RequiredLabel>Nominal</RequiredLabel>
                                         <CurrencyInput value={form.data.amount} onValueChange={(value) => form.setData('amount', value)} />
                                         <div className="flex flex-wrap gap-2">
                                             {nominalPresets.map((amount) => (
@@ -257,15 +272,16 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Judul</Label>
+                                            <RequiredLabel>Judul</RequiredLabel>
                                             <Input
                                                 value={form.data.merchant}
                                                 onChange={(event) => form.setData('merchant', event.target.value)}
                                                 placeholder="Contoh: Rokok, Bensin, dll"
                                             />
+                                            <FormError message={form.errors.merchant} />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Kebutuhan</Label>
+                                            <RequiredLabel>Kebutuhan</RequiredLabel>
                                             <FinanceSelect
                                                 value={form.data.need_type}
                                                 onValueChange={(value) => form.setData('need_type', value)}
@@ -304,7 +320,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                 <form className="space-y-4" onSubmit={submitTransfer}>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Dari</Label>
+                                            <RequiredLabel>Dari</RequiredLabel>
                                             <FinanceSelect
                                                 value={transferForm.data.from_account_id}
                                                 onValueChange={(value) => transferForm.setData('from_account_id', value)}
@@ -317,7 +333,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                             <FormError message={transferForm.errors.from_account_id} />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Ke</Label>
+                                            <RequiredLabel>Ke</RequiredLabel>
                                             <FinanceSelect
                                                 value={transferForm.data.to_account_id}
                                                 onValueChange={(value) => transferForm.setData('to_account_id', value)}
@@ -332,7 +348,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <Label>Nominal</Label>
+                                            <RequiredLabel>Nominal</RequiredLabel>
                                             <CurrencyInput
                                                 value={transferForm.data.amount}
                                                 onValueChange={(value) => transferForm.setData('amount', value)}
@@ -340,7 +356,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                             <FormError message={transferForm.errors.amount} />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Tanggal</Label>
+                                            <RequiredLabel>Tanggal</RequiredLabel>
                                             <DatePickerInput
                                                 value={transferForm.data.transfer_date}
                                                 onValueChange={(value) => transferForm.setData('transfer_date', value)}
@@ -388,6 +404,15 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                                 timeSource={transaction.updated_at ?? transaction.created_at}
                                             />
                                         </p>
+                                        <p className="text-muted-foreground mt-1 text-xs">
+                                            Dibuat oleh {transactionCreator(transaction)}
+                                            {transaction.created_at && (
+                                                <>
+                                                    {' '}
+                                                    - <DateTimeDisplay value={transaction.created_at} />
+                                                </>
+                                            )}
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <MoneyDisplay
@@ -400,20 +425,24 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                                       : 'font-semibold text-rose-600'
                                             }
                                         />
-                                        <button
-                                            className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
-                                            onClick={() => editTransaction(transaction)}
-                                            aria-label="Edit transaksi"
-                                        >
-                                            <Pencil className="size-4" />
-                                        </button>
-                                        <button
-                                            className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                            onClick={() => router.delete(`/transactions/${transaction.id}`, { preserveScroll: true })}
-                                            aria-label="Hapus transaksi"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                        {transaction.can_edit !== false && (
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                                onClick={() => editTransaction(transaction)}
+                                                aria-label="Edit transaksi"
+                                            >
+                                                <Pencil className="size-4" />
+                                            </button>
+                                        )}
+                                        {transaction.can_delete !== false && (
+                                            <button
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
+                                                onClick={() => router.delete(`/transactions/${transaction.id}`, { preserveScroll: true })}
+                                                aria-label="Hapus transaksi"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}

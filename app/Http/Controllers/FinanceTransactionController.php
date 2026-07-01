@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Enums\TransactionType;
+use App\Enums\Visibility;
 use App\Http\Requests\StoreFinanceTransactionRequest;
 use App\Models\Category;
 use App\Models\FinanceTransaction;
 use App\Models\FinancialAccount;
 use App\Models\SavingGoal;
 use App\Services\Finance\CategoryBootstrapService;
+use App\Services\Finance\FamilyAccessService;
 use App\Services\Finance\TransactionService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,27 +23,49 @@ class FinanceTransactionController extends Controller
     public function __construct(
         private readonly TransactionService $transactions,
         private readonly CategoryBootstrapService $categories,
+        private readonly FamilyAccessService $families,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->categories->ensureDefaults($request->user());
+        $user = $request->user();
+        $familyIds = $this->families->activeFamilyIds($user);
         $selectedType = $this->selectedTransactionType($request);
 
         return Inertia::render('transactions/index', [
             'transactions' => FinanceTransaction::query()
-                ->with(['account', 'category', 'savingGoal.account'])
-                ->where('user_id', $request->user()->id)
+                ->with(['account', 'category', 'savingGoal.account', 'user:id,name,email'])
+                ->where(function (Builder $query) use ($user, $familyIds) {
+                    $query->where('user_id', $user->id);
+
+                    if ($familyIds !== []) {
+                        $query->orWhere(function (Builder $familyQuery) use ($familyIds) {
+                            $familyQuery
+                                ->whereIn('family_id', $familyIds)
+                                ->where('visibility', Visibility::Family->value);
+                        });
+                    }
+                })
                 ->when($selectedType !== 'all', fn ($query) => $query->where('type', $selectedType))
                 ->latest('transaction_date')
                 ->latest('id')
                 ->paginate(10)
-                ->withQueryString(),
-            'accounts' => FinancialAccount::query()->where('user_id', $request->user()->id)->where('is_active', true)->get(),
-            'categories' => Category::query()->where('user_id', $request->user()->id)->orderBy('type')->orderBy('name')->get(),
+                ->withQueryString()
+                ->through(fn (FinanceTransaction $transaction): array => [
+                    ...$transaction->toArray(),
+                    'can_edit' => $transaction->user_id === $user->id,
+                    'can_delete' => $transaction->user_id === $user->id,
+                ]),
+            'accounts' => $this->families->accessibleAccountQuery($user)
+                ->with('user:id,name,email')
+                ->where('is_active', true)
+                ->latest()
+                ->get(),
+            'categories' => Category::query()->where('user_id', $user->id)->orderBy('type')->orderBy('name')->get(),
             'savingGoals' => SavingGoal::query()
                 ->with('account')
-                ->where('user_id', $request->user()->id)
+                ->where('user_id', $user->id)
                 ->where('status', 'active')
                 ->latest()
                 ->get(),
@@ -84,10 +109,14 @@ class FinanceTransactionController extends Controller
     private function validatedPayload(StoreFinanceTransactionRequest $request): array
     {
         $payload = $this->transactions->normalizePayload($request->validated(), $request->user()->id);
-        $account = FinancialAccount::query()->where('user_id', $request->user()->id)->findOrFail($payload['financial_account_id']);
+        $account = FinancialAccount::query()->findOrFail($payload['financial_account_id']);
+
+        abort_unless($this->families->canUseAccount($request->user(), $account), 403);
+
         $category = $payload['type'] === 'saving'
             ? $this->savingCategory($request)
             : Category::query()->where('user_id', $request->user()->id)->findOrFail($payload['category_id']);
+        $familyId = $this->families->sharedFamilyIdForAccount($request->user(), $account);
 
         if ($payload['type'] === 'saving') {
             SavingGoal::query()
@@ -96,7 +125,10 @@ class FinanceTransactionController extends Controller
                 ->findOrFail($payload['saving_goal_id']);
         }
 
-        $payload['family_id'] = $account->family_id;
+        $payload['family_id'] = $familyId;
+        $payload['visibility'] = $familyId && ($account->visibility === Visibility::Family->value || $account->user_id !== $request->user()->id)
+            ? Visibility::Family->value
+            : $payload['visibility'];
         $payload['category_id'] = $category->id;
 
         return $payload;

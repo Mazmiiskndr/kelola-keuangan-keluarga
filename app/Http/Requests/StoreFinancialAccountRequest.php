@@ -22,6 +22,7 @@ class StoreFinancialAccountRequest extends FormRequest
             'initial_balance' => ['required', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'size:3'],
             'visibility' => ['required', 'in:private,family,shared_goal'],
+            'family_id' => ['nullable', 'exists:families,id'],
         ];
     }
 }

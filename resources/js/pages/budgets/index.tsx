@@ -5,8 +5,8 @@ import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
+import { RequiredLabel } from '@/components/finance/required-label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { currentMonthDateRange, toDateInputValue, toFormString } from '@/lib/form-values';
 import { type BreadcrumbItem } from '@/types';
@@ -97,7 +97,7 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
-                                    <Label>Kategori</Label>
+                                    <RequiredLabel>Kategori</RequiredLabel>
                                     <FinanceSelect
                                         value={form.data.category_id}
                                         onValueChange={(value) => form.setData('category_id', value)}
@@ -110,7 +110,7 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
                                     <FormError message={form.errors.category_id} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Periode</Label>
+                                    <RequiredLabel>Periode</RequiredLabel>
                                     <DateRangePickerInput
                                         startValue={form.data.period_start}
                                         endValue={form.data.period_end}
@@ -120,7 +120,7 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
                                     <FormError message={form.errors.period_start || form.errors.period_end} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Nominal</Label>
+                                    <RequiredLabel>Nominal</RequiredLabel>
                                     <CurrencyInput value={form.data.amount} onValueChange={(value) => form.setData('amount', value)} />
                                     <FormError message={form.errors.amount} />
                                 </div>

@@ -2,6 +2,8 @@ export type MoneyValue = number | string;
 
 export interface FinancialAccount {
     id: number;
+    user_id?: number;
+    family_id?: number | null;
     name: string;
     display_name?: string;
     bank_name?: string;
@@ -13,6 +15,18 @@ export interface FinancialAccount {
     currency: string;
     visibility: string;
     is_active: boolean;
+    owner?: {
+        id?: number;
+        name?: string;
+        email?: string;
+    } | null;
+    user?: {
+        id?: number;
+        name?: string;
+        email?: string;
+    } | null;
+    can_edit?: boolean;
+    can_delete?: boolean;
 }
 
 export interface Paginated<T> {
@@ -46,6 +60,13 @@ export interface FinanceTransaction {
     need_type: string;
     account?: FinancialAccount;
     category?: Category;
+    user?: {
+        id?: number;
+        name?: string;
+        email?: string;
+    } | null;
+    can_edit?: boolean;
+    can_delete?: boolean;
     saving_goal_id?: number;
     saving_goal?: SavingGoal;
 }

@@ -2,6 +2,7 @@ import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
+import { RequiredLabel } from '@/components/finance/required-label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,12 +48,12 @@ function FamilyMemberForm({ family }: FamilyMemberFormProps) {
             onSubmit={submit}
         >
             <div className="relative space-y-2 pb-6">
-                <Label>Email anggota</Label>
+                <RequiredLabel>Email anggota</RequiredLabel>
                 <Input value={form.data.email} onChange={(event) => form.setData('email', event.target.value)} placeholder="email@keluarga.com" />
                 <FormError message={form.errors.email} className="absolute bottom-0 left-0" />
             </div>
             <div className="relative space-y-2 pb-6">
-                <Label>Role</Label>
+                <RequiredLabel>Role</RequiredLabel>
                 <FinanceSelect value={form.data.role} onValueChange={(value) => form.setData('role', value)} options={roleOptions} />
                 <FormError message={form.errors.role} className="absolute bottom-0 left-0" />
             </div>
@@ -103,11 +104,11 @@ export default function FamiliesIndex({ families }: FamiliesProps) {
                         <CardContent>
                             <form className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
-                                    <Label>Nama keluarga</Label>
+                                    <RequiredLabel>Nama keluarga</RequiredLabel>
                                     <Input
                                         value={form.data.name}
                                         onChange={(event) => form.setData('name', event.target.value)}
-                                        placeholder="Keluarga Santoso"
+                                        placeholder="Keluarga Azmi"
                                     />
                                     <FormError message={form.errors.name} />
                                 </div>
