@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'gateway_url' => env('WHATSAPP_GATEWAY_URL'),
+        'internal_secret' => env('WHATSAPP_GATEWAY_SECRET'),
+    ],
+
 ];

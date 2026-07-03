@@ -18,6 +18,11 @@
 /storage/*.key
 /storage/pail
 /vendor
+whatsapp-gateway/.env
+whatsapp-gateway/gateway.log
+whatsapp-gateway/node_modules
+whatsapp-gateway/.wwebjs_auth
+whatsapp-gateway/.wwebjs_cache
 auth.json
 Homestead.json
 Homestead.yaml
