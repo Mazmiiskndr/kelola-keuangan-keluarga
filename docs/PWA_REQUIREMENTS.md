@@ -1,99 +1,96 @@
-# PWA Requirements - Mobile dan iPhone Installable App
+# PWA Requirements
 
-Dokumen ini menjelaskan requirement Progressive Web App untuk project Kelola Keuangan Keluarga.
+This document defines the Progressive Web App requirements for Kelola Keuangan Keluarga. The PWA is the mobile delivery strategy for the web app, while WhatsApp is a separate daily input channel.
 
-## 1. Tujuan
+## 1. Goal
 
-PWA dipakai agar aplikasi bisa:
+The PWA should allow users to:
 
-- Diakses sebagai website biasa.
-- Dipasang ke Home Screen Android.
-- Dipasang ke Home Screen iPhone melalui Add to Home Screen.
-- Dibuka seperti aplikasi mobile tanpa membuat native Android/iOS app di fase awal.
+- Access the app as a normal website.
+- Install the app on Android where supported.
+- Add the app to iPhone Home Screen.
+- Use the finance dashboard and forms comfortably on mobile.
+- Keep all final financial data saved on the Laravel server.
 
-## 2. Scope MVP
+## 2. MVP Scope
 
-PWA masuk scope P0.
+PWA is P0.
 
-Fitur PWA MVP:
+MVP features:
 
 - Web app manifest.
-- App icon berbagai ukuran.
+- App icons.
 - Theme color.
 - Standalone display mode.
 - Service worker.
 - Offline fallback.
 - Static asset caching.
-- Install prompt untuk browser yang mendukung.
-- Panduan install manual untuk iPhone.
+- Install prompt for supported browsers.
+- Manual iPhone install guide.
 - Responsive mobile layout.
-- Safe area support untuk iPhone.
-- Update available prompt.
-- Online-first data persistence ke database server.
+- Safe-area support for iPhone.
+- Online-first financial persistence.
 
-Out of scope MVP:
+Out of scope for MVP:
 
 - Native Android app.
 - Native iOS app.
 - Offline-first full transaction input.
-- Background sync transaksi.
-- Web push notification sebagai fitur utama.
+- Background sync for financial mutations.
+- Web push notification as the main reminder channel.
+- WhatsApp bot implementation inside the service worker or browser.
 
-## 3. Model Penyimpanan Data
+## 3. Data Persistence Model
 
-PWA yang dipasang di Android atau iPhone tetap terhubung ke aplikasi Laravel yang sama dengan versi website.
+The installed PWA connects to the same Laravel application and MySQL database as the website.
 
-Saat online:
+When online:
 
-- User mengubah data dari PWA, misalnya tambah transaksi, bayar hutang, ubah budget, atau tambah target tabungan.
-- React/Inertia mengirim request ke Laravel.
-- Laravel melakukan validasi, authorization, dan business logic.
-- Data disimpan ke MySQL di server.
-- Setelah berhasil, data yang sama akan terlihat dari website, PWA Android, dan PWA iPhone selama user login ke akun yang sama.
+- User submits a finance action from React/Inertia.
+- Laravel validates input.
+- Laravel checks authorization.
+- Laravel runs business logic in services.
+- Data is saved to MySQL.
+- The same data is visible from website, PWA, and WhatsApp-created records.
 
-Saat offline:
+When offline:
 
-- PWA tidak bisa langsung menyimpan perubahan ke database server karena tidak ada koneksi.
-- Untuk MVP, transaksi perubahan data finansial harus memakai strategi online-first.
-- Jika user offline saat submit, tampilkan pesan bahwa data belum tersimpan dan minta user mencoba lagi saat online.
-- Draft lokal boleh dipakai untuk form yang belum dikirim, tetapi harus diberi label jelas `belum tersimpan`.
-- Jangan menampilkan perubahan offline sebagai data final sebelum berhasil tersinkron ke server.
+- The PWA cannot save final financial changes to the server.
+- The app must not show offline financial changes as successfully saved.
+- If local draft support is added later, drafts must be clearly marked as unsaved.
+- The user should be asked to retry when online.
 
-Rencana lanjutan:
+Future offline plan:
 
-- Offline draft transaction.
+- Local draft transactions.
 - Sync queue.
 - Conflict resolution.
-- Enkripsi data lokal.
-- Status sinkronisasi per item: draft, menunggu sinkron, berhasil, gagal.
+- Local encryption.
+- Per-item sync status: draft, pending, saved, failed.
 
-## 4. Platform Target
+## 4. Platform Targets
 
 ### Android
 
-Target:
-
-- Browser modern yang mendukung PWA install prompt.
-- User dapat memasang aplikasi ke Home Screen.
-- Aplikasi terbuka dalam standalone mode jika browser mendukung.
+- Modern browsers that support install prompts.
+- Home Screen installation.
+- Standalone app display where supported.
 
 ### iPhone
 
-Target:
+- Add to Home Screen through Safari share menu.
+- Correct app icon.
+- Safe-area layout.
+- Manual install guide because iOS install prompts are limited.
 
-- User dapat memasang aplikasi melalui Share lalu Add to Home Screen.
-- Aplikasi harus punya icon yang benar.
-- Layout harus mendukung safe area.
-- Panduan install harus tersedia karena iPhone tidak selalu menampilkan install prompt seperti Android.
+Notes:
 
-Catatan:
+- PWA support varies by browser and OS version.
+- Web push should remain P1 because permission and support differ across platforms.
 
-- Kemampuan PWA berbeda antar browser dan versi OS.
-- Notifikasi push web di iPhone punya syarat dan batasan khusus, sehingga masuk P1.
+## 5. Manifest Requirements
 
-## 5. Manifest Requirement
-
-Manifest minimal berisi:
+Manifest must include:
 
 - `name`.
 - `short_name`.
@@ -104,86 +101,100 @@ Manifest minimal berisi:
 - `background_color`.
 - `theme_color`.
 - `icons`.
-- `screenshots` jika dibutuhkan untuk install UI.
 
-Rekomendasi:
+Recommended values:
 
 - `display`: `standalone`.
 - `start_url`: `/dashboard`.
 - `scope`: `/`.
-- Icon minimal: 192x192, 512x512, maskable icon.
+- Icons: at least 192x192 and 512x512.
+- Include maskable icon.
 
-## 6. Service Worker Requirement
+## 6. Service Worker Requirements
 
-Service worker harus:
+Service worker must:
 
-- Meng-cache app shell dan asset statis.
-- Menyediakan offline fallback.
-- Tidak meng-cache response private finansial secara default.
-- Punya strategi update yang jelas.
-- Bisa dibersihkan saat logout jika ada cache yang berhubungan dengan user.
+- Cache app shell and static assets.
+- Provide offline fallback.
+- Avoid caching authenticated finance responses by default.
+- Use a clear update strategy.
+- Allow sensitive cache cleanup on logout when applicable.
 
-Strategi awal:
+Initial strategy:
 
-- Static asset: cache-first.
+- Static assets: cache-first.
 - Offline fallback: cache-first.
-- Authenticated page/API: network-only.
-- Public page: network-first atau stale-while-revalidate jika aman.
+- Authenticated pages/API: network-only.
+- Public pages: network-first or safe stale-while-revalidate.
 
-## 7. Security dan Privacy
+## 7. Security and Privacy
 
-Aturan wajib:
+Required rules:
 
-- Jangan menyimpan OpenAI API key di browser.
-- Jangan menyimpan data transaksi private di cache tanpa desain offline khusus.
-- Jangan menyimpan data finansial sensitif di localStorage jika tidak diperlukan.
-- Bersihkan storage saat logout.
-- Jika nanti ada offline transaction mode, harus memakai enkripsi, conflict resolution, dan sync queue.
-- Semua data final harus berasal dari database server, bukan hanya cache browser.
+- Do not store OpenAI API key in browser.
+- Do not store WhatsApp gateway secrets in browser.
+- Do not cache private transaction data without a secure offline design.
+- Do not store sensitive finance data in localStorage unless there is a clear need.
+- Clear sensitive storage on logout when applicable.
+- Final finance data must come from the server database, not only browser cache.
+- Offline mode must never silently create final finance records.
 
-## 8. UI/UX Requirement
+## 8. Relationship With WhatsApp
 
-- Dashboard mobile harus mudah dibaca.
-- Sidebar desktop berubah menjadi drawer.
-- Tombol utama harus mudah dijangkau.
-- Form transaksi harus nyaman dipakai dengan keyboard mobile.
-- Offline state harus jelas.
-- Jika perubahan belum tersimpan karena offline, statusnya harus jelas.
-- Install guide iPhone harus memakai instruksi ringkas.
-- Jangan meminta permission notifikasi terlalu awal.
+WhatsApp is not part of the PWA runtime.
 
-## 9. Testing Checklist
+- WhatsApp input comes through a separate Node.js `whatsapp-web.js` gateway.
+- Laravel processes WhatsApp messages and saves confirmed records.
+- Once saved, WhatsApp-created transactions appear in the same PWA dashboard and reports.
+- PWA may provide WhatsApp settings UI.
+- PWA must not hold WhatsApp session files, QR auth data, or gateway secrets.
 
-- Manifest valid.
-- Icon tampil benar.
-- Install prompt muncul di browser yang mendukung.
-- Add to Home Screen iPhone berhasil.
-- Standalone mode berjalan.
-- Offline fallback muncul saat internet mati.
-- Logout membersihkan storage/cache yang sensitif.
-- Dashboard mobile tidak overflow.
-- Form transaksi mobile bisa digunakan nyaman.
-- Perubahan data saat online tersimpan ke database dan terlihat di website.
-- Submit saat offline tidak dianggap berhasil.
-- Tidak ada API key atau secret di bundle frontend.
+## 9. Mobile UX Requirements
 
-## 10. Roadmap Lanjutan
+- Dashboard must be easy to scan on mobile.
+- Sidebar should become a drawer or mobile-friendly navigation.
+- Primary actions must be reachable.
+- Finance forms must be comfortable with the mobile keyboard.
+- Offline state must be clear.
+- Unsaved changes must be clearly marked.
+- iPhone install guide must be concise.
+- Do not request notification permission too early.
+- Untracked-money warnings should be concise and not alarming.
+
+## 10. Testing Checklist
+
+- Manifest is valid.
+- Icons render correctly.
+- Install prompt appears where supported.
+- iPhone Add to Home Screen works.
+- Standalone mode works.
+- Offline fallback appears when network is unavailable.
+- Logout cleans sensitive cache/storage where applicable.
+- Dashboard does not overflow on mobile.
+- Finance forms are usable on mobile.
+- Online changes save to Laravel/MySQL.
+- Offline submit is not marked as saved.
+- No API keys or secrets are present in frontend bundle.
+- WhatsApp-created transactions appear correctly in PWA views after server save.
+
+## 11. Roadmap
 
 P1:
 
 - Web push notification.
-- Reminder budget dan cicilan via push.
-- Better update notification.
-- App shortcut.
+- Budget and debt reminders through push.
+- Update available prompt.
+- App shortcuts.
+- WhatsApp settings UI in app settings.
 
 P2:
 
-- Offline transaction draft.
+- Offline transaction drafts.
 - Background sync.
-- Native wrapper jika PWA sudah tervalidasi tetapi butuh app store distribution.
+- Native wrapper if the PWA is validated but app store distribution is needed.
 
-## 11. Referensi
+## 12. References
 
 - MDN Progressive Web Apps: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
-- Apple Safari Web Content Guide - Configuring Web Applications: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
+- Apple Safari Web Content Guide: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
 - Apple WWDC - What's new in web apps: https://developer.apple.com/videos/play/wwdc2023/10120/

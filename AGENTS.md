@@ -1,156 +1,184 @@
-# AGENTS.md - Aturan Kerja Project Kelola Keuangan Keluarga
+# AGENTS.md - Project Working Rules
 
-Dokumen ini wajib dibaca sebelum membuat atau mengubah kode di project ini. Tujuannya agar semua implementasi konsisten, reusable, mudah dites, dan mudah dimaintain.
+This file is the operating guide for AI agents and developers working on the Kelola Keuangan Keluarga project. Read it before creating or changing code.
 
-## 1. Bahasa dan Komunikasi
+The goal is to keep the codebase consistent, reusable, secure, easy to test, and aligned with the product vision: a family finance management app that reduces manual tracking friction, gives clear monthly financial visibility, and supports quick WhatsApp-based input for everyday use.
 
-- Gunakan bahasa Indonesia untuk penjelasan ke owner project.
-- Jelaskan perubahan secara singkat, jelas, dan teknis.
-- Jika ada beberapa solusi, pilih yang paling aman, paling kecil dampaknya, dan paling sesuai dengan struktur project.
-- Jangan mengubah area di luar scope request kecuali benar-benar diperlukan.
+## 1. Communication
 
-## 2. Wajib Pahami Konteks Sebelum Coding
+- Use English for project documentation, code comments, pull request notes, and implementation explanations unless the user explicitly asks for another language.
+- If the user asks in Indonesian, start with an English version of the question, then answer in English unless they ask for Indonesian.
+- Explain changes briefly and technically.
+- If multiple solutions are possible, choose the safest option with the smallest impact and best fit for the existing architecture.
+- Do not modify areas outside the requested scope unless they are truly required.
 
-Sebelum membuat atau mengubah kode:
+## 2. Understand Context Before Coding
 
-- Baca `PRD.md`.
-- Baca dokumen di folder `docs/` yang relevan.
-- Pahami struktur folder, naming convention, dependency, helper, service, request, resource, policy, enum, dan reusable component yang sudah ada.
-- Cari dulu apakah logic yang dibutuhkan sudah tersedia.
-- Gunakan atau adaptasi logic yang sudah ada sebelum membuat logic baru.
+Before writing or changing code:
 
-## 3. Tech Stack Utama
+- Read `PRD.md`.
+- Read relevant files in `docs/`.
+- Inspect related controllers, services, requests, models, enums, migrations, React pages, and reusable components.
+- Understand the current project flow before adding new code.
+- Search for existing helpers, services, DTOs, types, constants, validators, and mappers.
+- Reuse or adapt existing logic before creating new logic.
+- Keep changes minimal and focused.
+
+## 3. Core Tech Stack
 
 - Backend: Laravel 13.
 - Frontend: React 19 + TypeScript.
 - Bridge: Inertia 3.
 - Mobile delivery: Progressive Web App.
 - Styling: Tailwind CSS 4.
-- UI components: shadcn/ui atau component internal berbasis Tailwind.
+- UI components: shadcn/ui style components and internal Tailwind components.
 - Database: MySQL.
-- Queue/cache: Redis.
-- AI: Laravel AI SDK (`laravel/ai`) dengan OpenAI API.
-- Testing: Pest atau PHPUnit.
+- Queue/cache/session/rate limit: Redis when needed.
+- AI: Laravel AI SDK (`laravel/ai`) with OpenAI API on the server only.
+- WhatsApp family MVP: separate Node.js gateway using `whatsapp-web.js`.
+- Testing: Pest or PHPUnit.
 - Formatter: Laravel Pint.
 - Static analysis: Larastan/PHPStan.
 
-## 4. Prinsip Coding
+## 4. Engineering Principles
 
-Semua kode harus mengikuti prinsip:
+- SRP: each class or function should have one clear responsibility.
+- DRY: avoid duplicated logic.
+- KISS: prefer simple, readable solutions over unnecessary abstraction.
+- SOLID when relevant.
+- Business logic must be reusable and should not be locked inside controllers or React components.
+- Keep functions short and names explicit.
+- Match the existing naming, folder structure, request/response style, and component style.
+- Avoid large refactors unless they are required to solve the task safely.
 
-- SRP: satu class/function punya satu tanggung jawab utama.
-- DRY: hindari duplikasi logic.
-- KISS: solusi sederhana lebih diutamakan daripada abstraksi berlebihan.
-- SOLID jika relevan.
-- Clean code: nama jelas, method pendek, dependency eksplisit, flow mudah dibaca.
-- Reusable: logic bisnis tidak boleh terkunci di controller atau React component.
-- Maintainable: struktur mudah dipahami developer lain.
+## 5. Laravel Backend Rules
 
-## 5. Aturan Backend Laravel
+- Controllers must stay thin.
+- Input validation must use Form Request classes when the input is not trivial.
+- Authorization must use policies, gates, or established access services.
+- Core business logic belongs in services or actions.
+- Complex API responses should use resources if needed.
+- Use enums for fixed values such as transaction type, visibility, family role, account type, need type, debt status, and recommendation status.
+- Use database transactions for operations that mutate balances, transactions, debts, debt payments, savings, transfers, or money-related aggregates.
+- Do not calculate important financial values directly in controllers.
+- Avoid magic strings, magic numbers, unchecked errors, and duplicated literals.
+- Every cross-user or family operation must check permission.
+- Never expose secrets, API keys, or internal tokens to the frontend.
 
-- Controller harus tipis.
-- Validasi input wajib memakai Form Request.
-- Authorization wajib memakai Policy atau Gate.
-- Logic bisnis utama ditempatkan di Service atau Action.
-- Response API memakai Resource jika datanya kompleks.
-- Gunakan Enum untuk nilai tetap seperti transaction type, visibility, role, account type, need type, debt status, dan recommendation status.
-- Gunakan database transaction untuk operasi yang mengubah saldo, transaksi, hutang, pembayaran hutang, tabungan, dan transfer.
-- Jangan melakukan kalkulasi finansial penting langsung di controller.
-- Jangan memakai magic string atau magic number untuk rule finansial.
-- Semua operasi lintas user/family harus dicek permission.
+## 6. React Frontend Rules
 
-## 6. Aturan Frontend React
+- Use small, reusable React components.
+- Separate pages, layouts, feature components, and base UI components.
+- Do not place complex financial rules in React.
+- React should display data, manage UI interactions, and submit actions to Laravel.
+- Use TypeScript interfaces/types for important props and data structures.
+- Use Inertia Link/Form patterns for SPA-like navigation.
+- Keep authenticated layouts and finance forms PWA-ready for mobile, tablet, and desktop.
+- Do not rely on hover-only interactions for important actions.
+- Avoid unnecessary global state and excessive prop drilling.
+- Reusable finance UI should be shared through components such as money display, badges, selects, charts, filters, empty states, and stat cards.
 
-- Gunakan React component yang kecil dan reusable.
-- Pisahkan page, layout, feature component, dan base UI component.
-- Jangan menaruh business rule finansial kompleks di React.
-- React hanya menampilkan data, mengelola interaksi UI, dan mengirim action ke Laravel.
-- Gunakan TypeScript type/interface untuk props dan data penting.
-- Gunakan Inertia Link/Form agar navigasi terasa SPA tanpa full page reload.
-- Pastikan layout dan component utama PWA-ready untuk mobile, tablet, dan desktop.
-- Jangan mengandalkan hover-only interaction untuk fitur penting karena user mobile tidak punya hover.
-- Hindari prop drilling berlebihan. Jika state hanya untuk satu fitur, simpan lokal. Jika lintas fitur, buat hook/context yang jelas.
-- Component chart, table, filter, modal, dan stat card harus reusable.
+## 7. PWA Rules
 
-## 7. Aturan PWA
+- The app must work as a normal website and as an installable PWA.
+- Provide a web app manifest, app icons, theme color, service worker, and safe offline fallback.
+- Use online-first persistence for financial data.
+- Do not cache authenticated financial responses by default.
+- Do not mark offline financial mutations as saved before they reach the Laravel server.
+- Offline drafts may exist only if clearly marked as unsaved.
+- Clear sensitive browser cache/storage on logout when applicable.
+- Web push notification is a later feature because browser and OS support varies.
 
-- Aplikasi harus bisa berjalan sebagai website dan installable PWA.
-- Sediakan web app manifest, icon, theme color, dan service worker.
-- Sediakan offline fallback yang aman.
-- Jangan cache response berisi data finansial private secara sembarangan.
-- Saat logout, bersihkan cache/storage yang berpotensi menyimpan data sensitif.
-- Untuk iPhone, siapkan panduan install melalui Share lalu Add to Home Screen.
-- Web push notification diperlakukan sebagai fitur lanjutan karena dukungan browser/perangkat berbeda-beda.
-- PWA memakai pendekatan online-first untuk data finansial: perubahan saat online harus tersimpan ke database server.
-- Jika user offline, jangan tandai perubahan finansial sebagai berhasil sebelum tersinkron ke server.
-- Draft offline harus diberi status jelas dan tidak boleh dianggap sebagai data final.
+## 8. AI and OpenAI Rules
 
-## 8. Aturan AI dan OpenAI
+- `OPENAI_API_KEY` must exist only on the Laravel server through `.env`.
+- Never expose OpenAI keys in React, browser bundles, logs, API responses, or Git.
+- AI provider/model configuration belongs in `config/ai.php`.
+- Use Laravel AI SDK for OpenAI integration.
+- Backend services must compute financial numbers before data is sent to AI.
+- AI may generate narratives, insights, recommendations, and action plans, but it must not be the source of truth for financial calculations.
+- AI output must be validated before storage.
+- AI endpoints must be rate limited.
+- Heavy AI work should run through queues.
 
-- OpenAI API key hanya boleh disimpan di server Laravel melalui `.env`.
-- Jangan pernah expose `OPENAI_API_KEY` ke React, browser, log, response API, atau repository Git.
-- Konfigurasi provider/model AI diletakkan di `config/ai.php`.
-- Gunakan Laravel AI SDK (`laravel/ai`) untuk integrasi AI.
-- Semua angka finansial dihitung oleh backend sebelum dikirim ke AI.
-- AI hanya membuat narasi, insight, rekomendasi, dan action plan dari data yang sudah dihitung.
-- Output AI harus divalidasi schema sebelum disimpan.
-- Fitur AI wajib punya rate limit.
-- Analisis AI yang berat dijalankan lewat Queue.
+## 9. Finance Domain Rules
 
-## 9. Aturan Fitur Keuangan
+- Income increases account balance.
+- Expense decreases account balance.
+- Saving transactions may move balance and update saving goal progress.
+- Transfers move balance between accounts and must not count as income or expense.
+- Debt installments are mandatory expenses.
+- Debt payments must create expense transactions and reduce outstanding debt.
+- Saving and investment recommendations must consider minimum installments first.
+- Family reports must only use data permitted by visibility and access rules.
+- WhatsApp-created transactions must use the same Laravel services as website-created transactions.
+- `Untracked money` is only a balance-gap indicator. It is not an automatic expense unless the user explicitly confirms an adjustment transaction.
 
-- Pemasukan menambah saldo akun.
-- Pengeluaran mengurangi saldo akun.
-- Transfer tidak dihitung sebagai pemasukan atau pengeluaran.
-- Hutang dan cicilan wajib masuk perhitungan pengeluaran wajib.
-- Pembayaran hutang harus membuat transaksi pengeluaran dan mengurangi sisa hutang.
-- Rekomendasi tabungan dan investasi wajib memperhitungkan cicilan minimum lebih dulu.
-- Laporan keluarga hanya boleh memakai data sesuai permission visibility.
+## 10. WhatsApp Bot Rules
 
-## 10. Aturan UI/UX
+- The first WhatsApp provider is `whatsapp-web.js`.
+- This provider is only for the personal/family MVP, not public production scale.
+- The WhatsApp gateway must be a separate Node.js process.
+- Node gateway responsibilities are limited to QR login, WhatsApp session handling, receiving messages, forwarding messages to Laravel, and sending Laravel-generated replies.
+- Do not put finance logic, final parsing, transaction validation, permission checks, balance calculation, report logic, budget logic, or AI logic in the Node gateway.
+- Laravel services own all WhatsApp command parsing, transaction drafts, validation, authorization, persistence, reports, reminders, and untracked-money calculation.
+- Build the WhatsApp provider behind a gateway contract so Meta WhatsApp Cloud API can replace `whatsapp-web.js` later without rewriting finance logic.
+- Free-form WhatsApp messages must not create final transactions immediately.
+- Create a transaction draft and save only after the user replies `OK`.
+- The parser must support at least these amount formats: `50rb`, `50ribu`, `50k`, `50.000`, `50000`, `1jt`, `1 juta`, and `1,5jt`.
+- Default smart reminder time is 21:00 WIB.
+- Reminder must be anti-spam: at most once per day per user, and skipped if the user already recorded a transaction that day.
+- WhatsApp session data, QR auth data, internal secrets, tokens, and private phone numbers must not be committed.
+- Internal endpoints between Laravel and the Node gateway must use shared secret/signature validation and idempotency by `message_id`.
 
-- Dashboard harus modern, rapi, cepat dipindai, dan cocok untuk aplikasi finansial.
-- Gunakan sidebar sebagai navigasi utama.
-- Sidebar harus responsive dan berubah menjadi drawer/bottom-friendly navigation di mobile.
-- Route `/` untuk guest harus menampilkan halaman login custom aplikasi, bukan welcome page bawaan Laravel.
-- Jika user sudah login, route `/` harus redirect ke dashboard.
-- Aplikasi wajib mendukung light mode, dark mode, dan system mode.
-- Toggle tema wajib tersedia di halaman login, header aplikasi, dan halaman pengaturan tampilan.
-- Vuexy Admin boleh dijadikan inspirasi visual untuk pola sidebar, topbar, dashboard card, chart, dark mode, dan layout admin.
-- Jangan menyalin source code, asset, warna, atau desain Vuexy secara langsung.
-- UI harus tetap dibuat dengan komponen sendiri berbasis React, Tailwind, dan shadcn/ui.
-- Setiap halaman utama harus responsif desktop dan mobile.
-- Tabel, filter, chart, summary card, dan empty state harus konsisten.
-- Jangan membuat UI terlalu ramai. Data finansial harus mudah dibaca.
+## 11. UI/UX Rules
 
-## 11. Testing dan Quality Gate
+- The dashboard should be modern, calm, scannable, and suitable for financial data.
+- Use sidebar navigation for authenticated desktop layouts.
+- Sidebar must adapt to mobile drawer or mobile-friendly navigation.
+- `/` must show the custom login page for guests and redirect authenticated users to dashboard.
+- Support light, dark, and system theme modes.
+- Theme toggle must be available on login, app header, and appearance settings.
+- Vuexy Admin may be used only as visual inspiration, not copied.
+- Do not copy Vuexy source code, assets, colors, or design directly.
+- Main pages must be responsive on desktop and mobile.
+- Tables, filters, charts, summary cards, forms, and empty states must be visually consistent.
+- Financial data should be easy to read. Avoid clutter.
 
-Minimal test untuk fitur penting:
+## 12. Testing and Quality Gate
 
-- TransactionService.
-- AccountBalanceService.
-- DebtService.
-- DebtPaymentService.
-- BudgetService.
-- SavingGoalService.
-- FinancialMetricService.
-- AiAnalysisService.
-- FamilyPermissionService.
+Minimum tests for important features:
 
-Sebelum dianggap selesai:
+- `TransactionService`.
+- `AccountBalanceService`.
+- `DebtService`.
+- `DebtPaymentService`.
+- `BudgetService`.
+- `SavingGoalService`.
+- `FinancialMetricService`.
+- `AiAnalysisService`.
+- Family access/permission service.
+- `WhatsAppTransactionParser`.
+- `WhatsAppTransactionDraftService`.
+- WhatsApp reminder behavior.
+- Untracked-money calculation.
 
-- Jalankan test yang relevan.
-- Jalankan formatter.
-- Pastikan tidak ada akses data lintas user/family.
-- Pastikan tidak ada API key atau secret yang masuk Git.
-- Pastikan manifest, service worker, dan offline fallback PWA berjalan.
-- Pastikan perubahan tidak merusak flow utama.
+Before considering work complete:
 
-## 12. Larangan
+- Run relevant tests.
+- Run formatter when code was changed.
+- Ensure no cross-user or cross-family data leak.
+- Ensure no API key, token, WhatsApp session, QR auth data, or secret is committed.
+- Ensure PWA manifest, service worker, and offline fallback still work when touched.
+- Ensure the main finance flows are not broken.
 
-- Jangan membuat ulang helper/service/component jika sudah ada yang relevan.
-- Jangan membuat refactor besar tanpa kebutuhan jelas.
-- Jangan menaruh business logic kompleks di controller atau React component.
-- Jangan menaruh secret di frontend.
-- Jangan menghapus data finansial permanen jika masih terkait laporan. Gunakan soft delete atau archive jika sesuai.
-- Jangan membuat AI menghitung angka penting tanpa validasi backend.
+## 13. Prohibited Changes
+
+- Do not recreate helpers, services, or components that already exist.
+- Do not perform unrelated large refactors.
+- Do not put complex business logic in controllers or React components.
+- Do not put finance business logic in the Node WhatsApp gateway.
+- Do not put secrets in frontend code.
+- Do not commit `.env`, WhatsApp session files, QR auth data, tokens, or gateway secrets.
+- Do not permanently delete financial records that are needed for reports. Use soft delete/archive when appropriate.
+- Do not allow AI to compute source-of-truth financial numbers without backend validation.

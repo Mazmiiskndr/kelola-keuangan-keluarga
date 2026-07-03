@@ -1,146 +1,211 @@
-# UI/UX Guidelines - Dashboard Keuangan Modern
+# UI/UX Guidelines
 
-Dokumen ini menjadi acuan tampilan aplikasi. Vuexy Admin boleh dijadikan referensi pola visual dan UX, tetapi desain, kode, asset, dan warna harus dibuat sendiri.
+This document guides the visual and interaction design for Kelola Keuangan Keluarga. The app should feel like a practical financial tool for repeated use, not a marketing landing page.
 
-## 1. Arah Visual
+Vuexy Admin may be used as UX inspiration for layout patterns, but do not copy its source code, assets, exact colors, or design.
 
-Target tampilan:
+## 1. Visual Direction
+
+The interface should feel:
 
 - Modern.
-- Profesional.
-- Rapi.
-- Cepat dipindai.
-- Cocok untuk aplikasi keuangan pribadi dan keluarga.
-- Tidak terlalu ramai.
-- Nyaman dipakai harian.
-- Terasa natural saat dibuka sebagai PWA di mobile/iPhone.
+- Professional.
+- Calm.
+- Organized.
+- Easy to scan.
+- Suitable for personal and family finance.
+- Comfortable for daily use.
+- Natural when installed as a PWA on mobile.
 
-Inspirasi dari Vuexy:
+Avoid visual clutter. Financial data should be readable at a glance.
 
-- Sidebar navigation.
-- Topbar dengan search, notification, dan user menu.
-- Dashboard card yang ringkas.
-- Chart dan statistik yang mudah dibaca.
-- Dark mode.
-- Layout admin yang responsif.
-
-Catatan: Vuexy adalah template komersial. Gunakan sebagai referensi UX, bukan untuk disalin langsung.
-
-## 2. Layout Utama
+## 2. Main Layout
 
 ### Desktop
 
-- Sidebar kiri fixed atau collapsible.
-- Topbar di kanan atas area content.
-- Content area memakai max width yang nyaman.
-- Dashboard memakai grid 12 kolom.
-- Data penting muncul di first viewport.
+- Left sidebar, fixed or collapsible.
+- Header/topbar inside the content area.
+- Comfortable content width.
+- Dashboard grid that prioritizes the most important metrics.
+- First viewport should answer the user's current financial condition.
 
 ### Mobile
 
-- Sidebar berubah menjadi drawer.
-- Topbar tetap ringkas.
-- Card ditumpuk satu kolom.
-- Chart tetap terbaca.
-- Tabel harus punya mode responsive atau compact list.
-- Gunakan safe area padding untuk perangkat iPhone.
-- Hindari kontrol penting yang terlalu dekat dengan tepi bawah layar.
-- Pastikan form transaksi nyaman dipakai dengan keyboard mobile.
+- Sidebar becomes drawer or mobile navigation.
+- Cards stack in one column.
+- Charts remain readable.
+- Tables need responsive list or compact mode.
+- Use safe-area padding for iPhone.
+- Keep important controls away from unsafe screen edges.
+- Finance forms must work well with mobile keyboard.
 
-## 3. Sidebar Navigation
+## 3. Navigation
 
-Menu utama:
+Main navigation:
 
 - Dashboard.
-- Transaksi.
-- Akun.
-- Budget.
-- Tabungan.
-- Hutang.
-- Laporan.
-- AI Insight.
-- Keluarga.
-- Pengaturan.
+- Transactions.
+- Accounts.
+- Categories.
+- Budgets.
+- Saving Goals.
+- Debts.
+- Reports.
+- AI Insights.
+- Family.
+- Settings.
 
-Prinsip:
+Future navigation/settings:
 
-- Gunakan icon + label.
-- Active state jelas.
-- Group menu jika item mulai banyak.
-- Jangan membuat sidebar terlalu panjang di MVP.
-- Untuk role admin keluarga, tampilkan menu keluarga sesuai permission.
+- WhatsApp settings.
+- Notification preferences.
 
-## 4. Dashboard Individu
+Rules:
 
-Komponen prioritas:
+- Use icon + label.
+- Active state must be clear.
+- Group items if navigation becomes long.
+- Show family features according to permission.
 
-- Total saldo.
-- Pemasukan bulan ini.
-- Pengeluaran bulan ini.
-- Cash flow bersih.
-- Cicilan bulan ini.
-- Progress budget.
-- Progress target tabungan.
-- Pengeluaran terbesar.
-- AI insight ringkas.
-- Chart pemasukan vs pengeluaran.
-- Chart pengeluaran per kategori.
+## 4. Personal Dashboard
 
-First viewport harus menjawab:
+Priority components:
 
-- Uang saya sekarang berapa?
-- Bulan ini pemasukan dan pengeluaran berapa?
-- Cicilan yang harus dibayar berapa?
-- Pengeluaran terbesar di mana?
-- Apa rekomendasi AI paling penting?
+- Total balance.
+- Monthly income.
+- Monthly expense.
+- Net cash flow.
+- Debt due this month.
+- Budget progress.
+- Saving goal progress.
+- Largest expenses.
+- Expense by category.
+- Income vs expense trend.
+- Untracked money.
+- AI insight preview.
+- Quick menu.
 
-Quick Menu:
+The first viewport should answer:
 
-- Tampilkan akses cepat ke fitur utama setelah summary cards.
-- Item Quick Menu harus memakai icon, nama fitur, dan deskripsi singkat.
-- Setiap item harus clickable dan masuk ke halaman fitur terkait.
-- Grid Quick Menu harus responsif, mudah ditekan di mobile, dan tetap terbaca di dark/light mode.
+- How much money do I have now?
+- How much did I earn and spend this month?
+- What debt is due?
+- Where did most money go?
+- Is there untracked money?
+- What action matters most?
 
-## 5. Dashboard Keluarga
+## 5. Family Dashboard
 
-Komponen prioritas:
+Priority components:
 
-- Total saldo keluarga.
-- Total pemasukan keluarga.
-- Total pengeluaran keluarga.
-- Cash flow keluarga.
-- Total cicilan keluarga bulan ini.
-- Pengeluaran per anggota.
-- Pengeluaran terbesar keluarga.
-- Budget keluarga.
-- Target tabungan keluarga.
-- AI rekomendasi keluarga.
+- Total family balance.
+- Family income.
+- Family expense.
+- Family cash flow.
+- Family debt due.
+- Spending by member when permission allows.
+- Largest family expenses.
+- Family budget.
+- Family saving goals.
+- AI family recommendation.
 
-## 6. Design Tokens Awal
+Privacy:
 
-Rekomendasi warna:
+- Do not expose private member details without permission.
+- If details are hidden, show aggregate values with clear labels.
 
-- Background light: putih atau slate sangat muda.
-- Background dark: neutral/slate gelap.
-- Primary: blue atau indigo yang tidak terlalu dominan.
+## 6. Lazy Tracking UX
+
+Lazy tracking exists for users who do not record every small expense.
+
+Show:
+
+- Opening balance.
+- Recorded income.
+- Recorded expense.
+- Current balance.
+- Remaining budget.
+- Untracked money.
+
+Tone:
+
+- Use calm wording.
+- Do not shame the user.
+- Make the gap actionable.
+
+Example:
+
+```text
+Rp500,000 is not tracked this month.
+```
+
+Do not present untracked money as a confirmed expense unless the user creates an adjustment transaction.
+
+## 7. WhatsApp UX
+
+WhatsApp should be fast and low-friction.
+
+Supported examples:
+
+- `Beli bensin 50rb`.
+- `bensin 50k`.
+- `bensin 50.000`.
+- `bensin 50000`.
+
+Confirmation message pattern:
+
+```text
+Record expense Bensin Rp50,000, category Transportation, from Cash? Reply OK or Batal.
+```
+
+Rules:
+
+- Keep replies short.
+- Ask for confirmation before saving.
+- Show category and account in confirmation.
+- Tell the user when category is a fallback.
+- After saving, show a short success message and updated balance.
+- Use `Batal` to cancel active draft.
+- For unknown phone numbers, send setup guidance without exposing data.
+
+Reminder message:
+
+```text
+Any expenses today? Record them quickly.
+```
+
+Reminder rules:
+
+- Default time is 21:00 WIB.
+- At most once per day.
+- Skip if the user already recorded a transaction that day.
+
+## 8. Design Tokens
+
+Recommended colors:
+
+- Light background: white or very light slate.
+- Dark background: neutral/slate dark.
+- Primary: restrained blue or indigo.
 - Success: green.
 - Warning: amber.
-- Danger: red.
-- Info: cyan atau sky.
+- Danger: red or rose.
+- Info: sky or cyan.
 
-Gunakan warna untuk makna finansial:
+Financial meaning:
 
 - Income: green.
-- Expense: red atau rose.
-- Saving: blue.
+- Expense: red or rose.
+- Saving: blue or teal.
 - Debt: amber/orange.
-- Investment: violet atau teal.
+- Investment: violet or teal.
+- Untracked money: amber, because it is a warning, not an error.
 
-Hindari UI yang hanya memakai satu keluarga warna. Dashboard perlu warna fungsional agar data mudah dibaca.
+Avoid one-note palettes. Use color to clarify data meaning.
 
-## 7. Component Standard
+## 9. Component Standards
 
-Komponen dasar:
+Base components:
 
 - Button.
 - Input.
@@ -158,7 +223,7 @@ Komponen dasar:
 - Progress bar.
 - Skeleton loading.
 
-Komponen domain:
+Finance components:
 
 - Money display.
 - Percentage change.
@@ -167,109 +232,117 @@ Komponen domain:
 - Budget progress.
 - Saving goal progress.
 - Debt status badge.
+- Untracked money indicator.
 - Recommendation card.
-- Financial health score.
+- Financial health summary.
 
-## 8. Chart Guidelines
+## 10. Chart Guidelines
 
-Chart yang dibutuhkan:
+Needed charts:
 
-- Line chart untuk trend pemasukan/pengeluaran.
-- Bar chart untuk perbandingan kategori.
-- Donut chart untuk komposisi pengeluaran.
-- Progress chart untuk budget dan tabungan.
-- Small sparkline untuk trend card.
+- Line or bar chart for income/expense trend.
+- Bar chart for category comparison.
+- Donut or list-style breakdown for expense composition.
+- Progress chart for budget and saving goals.
+- Sparkline for compact trend cards when useful.
 
-Aturan:
+Rules:
 
-- Jangan memakai chart 3D.
-- Jangan terlalu banyak warna dalam satu chart.
-- Label nominal harus jelas.
-- Tooltip harus menampilkan nominal dan persentase.
-- Data kosong harus punya empty state.
+- Do not use 3D charts.
+- Do not overload charts with too many colors.
+- Money labels must be clear.
+- Tooltips should show amount and percentage.
+- Empty data must have a useful empty state.
 
-## 9. Empty State
+## 11. Empty States
 
-Setiap halaman harus punya empty state.
+Every major page needs an empty state.
 
-Contoh:
+Examples:
 
-- Belum ada transaksi.
-- Belum ada akun.
-- Belum ada budget.
-- Belum ada hutang.
-- AI belum bisa menganalisis karena data belum cukup.
+- No transactions yet.
+- No accounts yet.
+- No budgets yet.
+- No debts yet.
+- No balance snapshots yet.
+- AI needs more data.
+- WhatsApp is not connected yet.
 
-Empty state harus memberi action jelas, misalnya tombol tambah transaksi atau buat budget.
+Empty states should provide a clear action, such as creating an account, adding a transaction, setting up WhatsApp, or creating a budget.
 
-## 10. Loading State
+## 12. Loading and Submission States
 
-Karena memakai Inertia, perpindahan halaman tidak full page reload. Tetap perlu:
+Use:
 
-- Progress indicator tipis saat navigation.
-- Skeleton untuk card dan table.
-- Disabled submit button saat form sedang diproses.
-- Optimistic UI hanya untuk aksi yang aman.
+- Thin progress indicator during Inertia navigation.
+- Skeletons for cards and tables.
+- Disabled submit buttons while processing.
+- Clear success/error feedback.
+- Optimistic UI only for safe actions.
 
-## 11. PWA UX
+Financial mutations should wait for server confirmation.
 
-PWA harus terasa seperti aplikasi mobile saat dibuka dari Home Screen.
+## 13. PWA UX
 
-Kebutuhan UX:
+The PWA should feel like a mobile app when opened from Home Screen.
 
-- Install prompt untuk browser yang mendukung.
-- Panduan install manual untuk iPhone.
-- Offline fallback yang informatif.
-- Update available prompt saat service worker menemukan versi baru.
-- Standalone mode tidak bergantung pada browser chrome.
-- Icon aplikasi jelas dan tetap terbaca di Home Screen.
-- Splash/background color sesuai brand.
-- Mobile navigation mudah dijangkau.
+Requirements:
 
-Catatan:
+- Install prompt where supported.
+- Manual iPhone install guide.
+- Informative offline fallback.
+- Update available prompt when service worker detects a new version.
+- Clear app icon.
+- Mobile navigation that is easy to reach.
 
-- Jangan menampilkan prompt install terlalu sering.
-- Jangan meminta notification permission sebelum user memahami manfaatnya.
-- Jika offline, jangan tampilkan data finansial lama sebagai data terbaru tanpa label yang jelas.
+Rules:
 
-## 12. Accessibility
+- Do not show install prompts too often.
+- Do not request notification permission before explaining value.
+- Do not show old financial data as current when offline without a clear label.
 
-- Kontras warna harus cukup.
-- Semua button icon harus punya label atau tooltip.
-- Form error harus jelas.
-- Navigasi keyboard harus tetap bisa digunakan.
-- Jangan hanya mengandalkan warna untuk status.
+## 14. Accessibility
 
-## 13. Larangan Desain
+- Color contrast must be sufficient.
+- Icon-only buttons need labels or tooltips.
+- Form errors must be clear.
+- Keyboard navigation should work.
+- Do not rely only on color for status.
+- Money values should use readable spacing and alignment.
 
-- Jangan membuat dashboard seperti landing page marketing.
-- Jangan memakai dekorasi berlebihan.
-- Jangan membuat card di dalam card tanpa kebutuhan jelas.
-- Jangan menyalin template Vuexy secara langsung.
-- Jangan menampilkan terlalu banyak metrik tanpa prioritas.
-- Jangan membuat text terlalu kecil untuk data finansial penting.
+## 15. Design Restrictions
 
-## 14. Referensi
+- Do not make dashboard pages look like marketing landing pages.
+- Do not add excessive decoration.
+- Do not nest cards inside cards without a clear need.
+- Do not copy Vuexy directly.
+- Do not show too many metrics without hierarchy.
+- Do not make important financial text too small.
+- Do not hide essential actions behind hover-only interactions.
+
+## 16. Theme
+
+- Support light, dark, and system modes.
+- Theme toggle must be available on login and authenticated layout.
+- Use Tailwind tokens and CSS variables.
+- Avoid hardcoded colors that work only in one mode.
+- Check forms, selects, date pickers, tables, charts, sidebar, topbar, cards, badges, pagination, modals, and empty states in both light and dark mode.
+- Theme preference should persist.
+- Avoid distracting color flash during initial load.
+
+## 17. Login Page
+
+- `/` for guests must show the custom login page.
+- Authenticated users should redirect to dashboard.
+- Login page should represent the product, not default Laravel.
+- Desktop may use a split visual/form layout.
+- Mobile should focus on a compact form.
+- Include app identity, key benefit, and theme toggle.
+- Keep explanation short.
+- Support remember me, forgot password, and registration when enabled.
+
+## 18. References
 
 - Vuexy Admin Template by Pixinvent: https://pixinvent.com/vuexy-bootstrap-html-admin-template/
 - Pixinvent product catalog: https://pixinvent.com/
 - MDN Progressive Web Apps: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
-
-## 15. Dark Mode dan Light Mode
-
-- Aplikasi wajib mendukung Light, Dark, dan System mode.
-- Toggle tema harus tersedia di halaman login dan area aplikasi setelah login.
-- Gunakan token warna Tailwind dan CSS variable yang sudah ada agar komponen konsisten.
-- Jangan membuat warna hardcoded yang hanya terbaca di salah satu mode.
-- Form, select, date picker, table, chart, sidebar, topbar, card, badge, pagination, modal, dan empty state wajib dicek di light dan dark mode.
-- Preferensi tema harus tersimpan dan langsung diterapkan ketika user kembali membuka aplikasi.
-- Hindari flash warna yang mengganggu saat aplikasi pertama kali dimuat.
-
-## 16. Login Page
-
-- Route `/` untuk guest wajib menampilkan halaman login custom.
-- Login page harus menjadi bagian dari pengalaman produk, bukan halaman default Laravel.
-- Desktop boleh memakai layout split visual dan form, sedangkan mobile harus fokus pada form login yang ringkas.
-- Login page harus menampilkan identitas aplikasi, manfaat utama, dan akses theme toggle.
-- Jangan menaruh penjelasan terlalu panjang di login page.
-- Form login harus jelas, mudah dipakai, dan tetap mendukung remember me, lupa password, serta registrasi jika fitur register aktif.

@@ -1,28 +1,33 @@
-# Technical Architecture - Laravel 13 + React 19
+# Technical Architecture
 
-Dokumen ini menjelaskan rekomendasi arsitektur teknis sebelum project mulai dicoding.
+This document defines the technical direction for Kelola Keuangan Keluarga. The application is a Laravel-first family finance system with React/Inertia UI, PWA delivery, AI-assisted insights, and a WhatsApp chatbot for low-friction daily input.
 
-## 1. Tujuan Arsitektur
+## 1. Architecture Goals
 
-- Kode reusable dan mudah dimaintain.
-- Business logic finansial tidak tersebar.
-- Permission keluarga aman sejak awal.
-- AI bisa dikembangkan tanpa mengganggu core finance.
-- Frontend terasa modern seperti SPA, tetapi tetap memanfaatkan routing dan controller Laravel.
+- Keep finance business logic reusable, testable, and centralized.
+- Keep controllers thin and services responsible for domain behavior.
+- Preserve family permissions and privacy from the beginning.
+- Make WhatsApp an input channel, not a separate finance engine.
+- Allow the initial `whatsapp-web.js` provider to be replaced by Meta WhatsApp Cloud API later.
+- Keep AI separate from deterministic financial calculations.
+- Keep the frontend modern and SPA-like while preserving Laravel routing, validation, and authorization.
 
-## 2. Stack Final
+## 2. Core Stack
 
-- Laravel 13 sebagai backend utama.
-- React 19 + TypeScript untuk UI.
-- Inertia 3 untuk navigasi tanpa full page reload.
-- PWA untuk installable mobile experience.
-- Tailwind CSS 4 untuk styling.
-- shadcn/ui sebagai basis komponen.
-- MySQL untuk database.
-- Redis untuk queue, cache, rate limit, dan session jika diperlukan.
-- Laravel AI SDK untuk OpenAI/ChatGPT API.
+- Backend: Laravel 13.
+- Frontend: React 19 + TypeScript.
+- Bridge: Inertia 3.
+- Styling: Tailwind CSS 4.
+- UI components: shadcn/ui style primitives and internal finance components.
+- Database: MySQL.
+- Queue/cache/session/rate limit: Redis when needed.
+- PWA: manifest, service worker, offline fallback, installable app shell.
+- AI: Laravel AI SDK with OpenAI API on the server only.
+- WhatsApp MVP: separate Node.js gateway using `whatsapp-web.js`.
+- Testing: Pest or PHPUnit.
+- Formatting/static analysis: Laravel Pint and Larastan/PHPStan.
 
-## 3. Struktur Folder Rekomendasi
+## 3. Recommended Structure
 
 ```text
 app/
@@ -43,103 +48,99 @@ app/
     Ai/
     Finance/
     Reports/
-    Families/
+    WhatsApp/
 
 resources/
   js/
     components/
-      base/
-      dashboard/
       finance/
-      forms/
       layout/
+      ui/
     hooks/
     layouts/
     pages/
     types/
-    utils/
+    lib/
 
 public/
   icons/
   offline.html
+  manifest.webmanifest
+  service-worker.js
 
-resources/
-  pwa/
-    manifest.webmanifest
-    service-worker.ts
+whatsapp-gateway/
+  src/
+  package.json
+  .env.example
 ```
 
 ## 4. Backend Layering
 
-### Controller
+### Controllers
 
-Tugas controller:
+Controllers should:
 
-- Menerima request.
-- Memanggil Form Request untuk validasi.
-- Memeriksa Policy jika diperlukan.
-- Memanggil Service atau Action.
-- Mengembalikan Inertia response atau JSON response.
+- Receive requests.
+- Use Form Requests when validation is non-trivial.
+- Check authorization through policies, gates, or access services.
+- Call services or actions.
+- Return Inertia responses, redirects, JSON, or streamed downloads.
 
-Controller tidak boleh berisi kalkulasi finansial kompleks.
+Controllers must not contain complex financial calculations.
 
-### Form Request
+### Form Requests
 
-Tugas Form Request:
+Form Requests should:
 
-- Validasi input.
-- Normalisasi input sederhana.
-- Authorization request jika cocok.
+- Validate inputs.
+- Normalize simple input values.
+- Authorize requests when appropriate.
 
-Contoh:
+Examples:
 
-- `StoreTransactionRequest`.
-- `UpdateTransactionRequest`.
+- `StoreFinanceTransactionRequest`.
+- `StoreFinancialAccountRequest`.
+- `StoreBudgetRequest`.
 - `StoreDebtRequest`.
 - `StoreDebtPaymentRequest`.
-- `RunMonthlyAiAnalysisRequest`.
+- Future: `StoreWhatsAppSettingRequest`.
 
-### Service
+### Services
 
-Tugas service:
+Services own business rules and should be reusable from controllers, jobs, commands, tests, and WhatsApp handlers.
 
-- Menjalankan business logic.
-- Mengatur database transaction.
-- Menghitung saldo, budget, hutang, dan metrik finansial.
-- Menjadi reusable logic untuk controller, job, command, dan test.
-
-Service utama:
+Core services:
 
 - `TransactionService`.
 - `AccountBalanceService`.
 - `TransferService`.
-- `BudgetService`.
-- `SavingGoalService`.
-- `DebtService`.
 - `DebtPaymentService`.
 - `FinancialMetricService`.
 - `ReportService`.
-- `FamilyPermissionService`.
+- `CategoryBootstrapService`.
+- `FamilyAccessService`.
 - `AiAnalysisService`.
-- `AiUsageService`.
+- `WhatsAppCommandService`.
+- `WhatsAppTransactionParser`.
+- `WhatsAppTransactionDraftService`.
+- `WhatsAppReplyService`.
+- `WhatsAppGateway`.
 
-### Action
+### Actions
 
-Gunakan Action untuk proses spesifik yang punya input-output jelas.
+Actions are useful for focused workflows with clear input/output:
 
-Contoh:
+- Create expense transaction.
+- Record debt payment.
+- Generate monthly finance snapshot.
+- Build AI finance context.
+- Process WhatsApp incoming message.
+- Send daily WhatsApp reminder.
+- Calculate untracked money.
 
-- `CreateExpenseTransaction`.
-- `RecordDebtPayment`.
-- `GenerateMonthlyFinanceSnapshot`.
-- `BuildAiFinanceContext`.
-- `GenerateSavingRecommendation`.
+### Enums
 
-### Enum
-
-Gunakan Enum untuk nilai tetap.
-
-Contoh:
+Use enums for fixed values:
 
 - `TransactionType`.
 - `AccountType`.
@@ -150,185 +151,308 @@ Contoh:
 - `DebtStatus`.
 - `RecommendationStatus`.
 - `AiAnalysisType`.
+- Future: `WhatsAppDraftStatus`, `BalanceSnapshotType`.
 
-## 5. Frontend Architecture
+## 5. Finance Domain Rules
+
+Core finance is the most important domain.
+
+- Income increases account balance.
+- Expense decreases account balance.
+- Saving transactions update saving goal progress and may move balance between accounts.
+- Transfers do not count as income or expense.
+- Debt payments create expense transactions and reduce outstanding debt.
+- Debt installments are mandatory expenses.
+- Budget usage is calculated from expense transactions.
+- Family reports must respect visibility and permissions.
+- All balance-changing operations must be atomic.
+- Balance recalculation must be possible when a transaction changes.
+
+## 6. Lazy Tracking and Untracked Money
+
+The product supports users who do not record every small transaction.
+
+Balance snapshots:
+
+- Opening balance snapshot, usually at the start of the month.
+- Current balance snapshot, usually from a user message such as `saldo sekarang 3jt`.
+
+Account-level formula:
+
+```text
+untracked_money =
+  opening_balance
+  + recorded_income
+  + transfer_in
+  - recorded_expense
+  - transfer_out
+  - current_balance
+```
+
+For all accounts together, internal transfers between the user's own accounts must not double-count spending.
+
+Rules:
+
+- `Untracked money` is a warning/indicator, not an automatic expense.
+- The system must ask for explicit confirmation before turning a gap into an adjustment transaction.
+- Reports must distinguish recorded expense from untracked money.
+
+## 7. WhatsApp Architecture
+
+The first WhatsApp integration uses `whatsapp-web.js` because the initial use case is personal/family-only and needs a free, practical bot.
+
+### Provider Decision
+
+- MVP provider: `whatsapp-web.js`.
+- Runtime: separate Node.js service.
+- Login: QR code with persistent local auth.
+- Future production provider: Meta WhatsApp Cloud API.
+
+### Separation of Responsibilities
+
+Node gateway may only:
+
+- Connect to WhatsApp Web.
+- Handle QR login and session.
+- Receive private messages.
+- Forward messages to Laravel.
+- Send replies generated by Laravel.
+- Expose a health endpoint.
+
+Laravel must own:
+
+- Phone-to-user resolution.
+- Command classification.
+- Amount parsing.
+- Category matching.
+- Transaction drafts.
+- Confirmation flow.
+- Permission checks.
+- Transaction creation.
+- Reports.
+- Reminders.
+- Untracked-money calculation.
+
+### Message Flow
+
+```text
+WhatsApp user
+  -> whatsapp-web.js gateway
+  -> POST /internal/whatsapp/messages
+  -> WhatsAppCommandService
+  -> Parser / draft / report / reminder handler
+  -> Existing finance services
+  -> Database
+  -> Laravel reply
+  -> POST /send-message on Node gateway
+  -> WhatsApp user
+```
+
+### Internal Endpoints
+
+Laravel endpoints:
+
+- `POST /internal/whatsapp/messages`.
+- `POST /internal/whatsapp/status`.
+
+Node gateway endpoints:
+
+- `POST /send-message`.
+- `GET /health`.
+
+Rules:
+
+- Use shared secret or signature validation.
+- Never rely on browser sessions for internal gateway calls.
+- Payloads must include `message_id`, `from_phone`, `body`, `timestamp`, and `provider`.
+- Laravel processing must be idempotent by `message_id`.
+- Session files and secrets must never be committed.
+
+## 8. WhatsApp Parsing Rules
+
+Supported amount formats:
+
+- `50rb`.
+- `50ribu`.
+- `50k`.
+- `50.000`.
+- `50000`.
+- `1jt`.
+- `1 juta`.
+- `1,5jt`.
+
+Examples:
+
+```text
+Beli bensin 50rb
+bensin 50k
+bensin 50.000
+bensin 50000
+```
+
+Expected parsed draft:
+
+```text
+amount: 50000
+type: expense
+category: Transportation
+merchant: Bensin
+```
+
+Rules:
+
+- Remove common verbs such as `beli`, `bayar`, `buat`, and `jajan`.
+- Use existing user categories and defaults.
+- If category is uncertain, use Other and mention that in confirmation.
+- Free-form text must create a draft only.
+- Save only after the user replies `OK`.
+- Cancel when the user replies `Batal`.
+- Expire stale drafts, for example after 15 minutes.
+
+## 9. Frontend Architecture
 
 ### Layout
 
-Gunakan layout utama:
+The authenticated layout should include:
 
-- `AuthenticatedLayout`.
-- `GuestLayout`.
-- `AdminLayout`.
-
-`AuthenticatedLayout` berisi:
-
-- Sidebar.
-- Topbar.
-- Main content.
-- Responsive mobile drawer.
+- Sidebar navigation.
+- Header/topbar.
+- Main content area.
 - User menu.
-- PWA install prompt atau install guide.
+- Notification entry.
+- Responsive mobile drawer.
+- PWA install guidance when appropriate.
 
 ### Pages
 
-Halaman Inertia disimpan di `resources/js/pages`.
+Inertia pages live in `resources/js/pages`.
 
-Contoh:
+Important pages:
 
-- `Dashboard/Index.tsx`.
-- `Transactions/Index.tsx`.
-- `Transactions/Create.tsx`.
-- `Accounts/Index.tsx`.
-- `Budgets/Index.tsx`.
-- `SavingGoals/Index.tsx`.
-- `Debts/Index.tsx`.
-- `Debts/Show.tsx`.
-- `Reports/Index.tsx`.
-- `AiInsights/Index.tsx`.
-- `Families/Dashboard.tsx`.
+- Dashboard.
+- Transactions.
+- Accounts.
+- Categories.
+- Budgets.
+- Saving goals.
+- Debts.
+- Reports.
+- AI insights.
+- Families.
+- Settings.
+- Future WhatsApp settings.
 
-### Component Reuse
+### Reusable Components
 
-Komponen yang harus reusable:
+Reusable finance components should include:
 
-- `StatCard`.
-- `MetricTrendCard`.
-- `MoneyDisplay`.
-- `PeriodFilter`.
-- `CategoryBadge`.
-- `AccountSelector`.
-- `TransactionTable`.
-- `DebtSummaryCard`.
-- `BudgetProgress`.
-- `SavingGoalProgress`.
-- `AiRecommendationCard`.
-- `DashboardChartCard`.
+- Money display.
+- Stat card.
+- Finance badge.
+- Finance select.
+- Currency input.
+- Date picker input.
+- Progress row.
+- Simple charts.
+- Empty state.
+- Form error.
 
-## 6. Data Flow
+## 10. PWA Architecture
 
-### Inertia Page Load
+The PWA allows the website to feel like a mobile app without native Android or iOS development.
 
-1. User membuka halaman.
-2. Route Laravel memanggil controller.
-3. Controller mengambil data melalui service/query.
-4. Controller mengembalikan Inertia props.
-5. React merender halaman.
-6. Navigasi antar halaman memakai Inertia, sehingga tidak full page reload.
-
-### Create/Update/Delete
-
-1. React mengirim data memakai Inertia form.
-2. Laravel Form Request memvalidasi input.
-3. Policy mengecek akses.
-4. Service menjalankan logic dan database transaction.
-5. Redirect kembali dengan flash message.
-6. Inertia refresh data yang diperlukan.
-
-## 7. PWA Architecture
-
-PWA dibuat agar aplikasi bisa dipasang ke Home Screen Android dan iPhone tanpa native app di fase MVP.
-
-Komponen PWA:
+Components:
 
 - Web app manifest.
-- App icon berbagai ukuran.
+- Icons.
 - Theme color.
 - Service worker.
-- Offline fallback page.
-- Cache static asset.
-- Install guide untuk iPhone.
+- Offline fallback.
+- Static asset caching.
 - Standalone display mode.
+- iPhone install guide.
 
-Strategi cache:
+Caching strategy:
 
-- Cache asset statis seperti JS, CSS, font, dan icon.
-- Cache offline fallback.
-- Jangan cache response authenticated yang berisi data finansial private secara default.
-- Jika nanti ada offline data mode, buat desain khusus dengan enkripsi, sync queue, dan user opt-in.
+- Static assets: cache-first.
+- Offline fallback: cache-first.
+- Authenticated pages and finance APIs: network-only by default.
+- Public pages: network-first or stale-while-revalidate when safe.
 
-PWA mobile behavior:
+Rules:
 
-- Sidebar desktop berubah menjadi drawer di mobile.
-- Gunakan safe area padding untuk iPhone.
-- Form utama harus nyaman dipakai dengan keyboard mobile.
-- Chart dan table punya mode mobile-friendly.
+- Do not cache private financial responses by default.
+- Do not mark offline mutations as saved.
+- Drafts must be clearly labeled as unsaved if offline support is added later.
 
-Web push:
+## 11. AI Architecture
 
-- Masuk fase P1.
-- Gunakan VAPID key dan channel notification yang sesuai saat implementasi.
-- Tetap sediakan in-app notification sebagai fallback.
+Use two layers:
 
-## 8. Finance Domain Rules
+- `FinancialMetricService` calculates deterministic metrics.
+- Laravel AI agents generate narratives, recommendations, and action plans.
 
-Core finance harus diperlakukan sebagai domain paling penting.
+AI flow:
 
-- Saldo akun harus konsisten dengan transaksi.
-- Operasi transaksi harus atomic.
-- Transfer tidak masuk income/expense.
-- Hutang jatuh tempo dihitung sebagai kewajiban bulanan.
-- Pembayaran hutang masuk pengeluaran wajib.
-- Budget hanya menghitung expense sesuai periode.
-- Family report hanya memakai data dengan permission benar.
+1. User requests analysis.
+2. Backend computes financial metrics.
+3. Snapshot is stored.
+4. Job calls AI agent.
+5. Structured output is validated.
+6. Result is stored.
+7. UI displays the analysis.
 
-## 9. AI Architecture
+Rules:
 
-Gunakan 2 layer:
+- AI must not be the source of truth for financial numbers.
+- AI must respect family permissions.
+- AI output must mention period and data sufficiency.
+- OpenAI keys must stay on the server.
 
-- `FinancialMetricService`: menghitung angka deterministik.
-- Laravel AI Agent: membuat analisis, narasi, dan rekomendasi.
+## 12. Security Architecture
 
-Alur AI:
+- All major models should have policies or equivalent access rules.
+- Every mutation endpoint must validate authorization.
+- Private member data must not leak into family reports.
+- OpenAI API key is server-only.
+- WhatsApp internal routes require shared secret/signature validation.
+- WhatsApp session data must be outside Git.
+- Exports should create audit logs.
+- File uploads must validate MIME type and size.
+- Service worker must not store private finance data without an explicit secure offline design.
+- Logout should clear sensitive browser cache/storage when applicable.
 
-1. User meminta analisis.
-2. Service membuat snapshot finansial.
-3. Snapshot disimpan.
-4. Job memanggil agent AI.
-5. Agent menghasilkan structured output.
-6. Output divalidasi dan disimpan.
-7. UI menampilkan hasil.
+## 13. Testing Strategy
 
-AI tidak boleh langsung membaca semua transaksi mentah tanpa penyaringan permission.
+Prioritize tests for:
 
-## 10. Security Architecture
+- Financial calculations.
+- Transaction create/update/delete balance effects.
+- Transfer balance effects.
+- Debt payment behavior.
+- Budget and report summaries.
+- Family permission boundaries.
+- AI service with fake provider or fallback.
+- WhatsApp parser amount formats.
+- WhatsApp draft confirmation/cancel/expiry.
+- WhatsApp idempotency by `message_id`.
+- WhatsApp reminder anti-spam rules.
+- Untracked-money calculation.
+- PWA installability and offline fallback manually.
 
-- Semua model utama harus punya Policy.
-- Semua endpoint mutasi wajib authorization.
-- Data private anggota keluarga tidak boleh masuk laporan keluarga.
-- OpenAI API key hanya di server.
-- Endpoint AI wajib rate limit.
-- Export laporan wajib audit log.
-- File attachment wajib validasi mime type dan size.
-- Service worker tidak boleh menyimpan data sensitif tanpa strategi keamanan yang jelas.
-- Logout harus membersihkan cache/storage PWA yang berpotensi berisi data user.
+## 14. Routing and Authentication Entry Point
 
-## 11. Testing Strategy
+- `/` is the guest login entry point.
+- Authenticated users visiting `/` redirect to dashboard.
+- The login page is rendered through Inertia.
+- Authentication should keep Laravel starter-kit behavior for session, CSRF, remember me, forgot password, and rate limiting.
+- Default Laravel welcome page is not used.
 
-Prioritas test:
+## 15. Theme Architecture
 
-- Unit test untuk kalkulasi finansial.
-- Feature test untuk transaksi, hutang, budget, dan family permission.
-- Test untuk mencegah akses data lintas user.
-- Test untuk AI service memakai fake provider, bukan call OpenAI asli.
-- Test untuk report summary agar total income/expense/debt benar.
-- Test manual PWA installability di Android dan iPhone.
-- Test offline fallback.
-
-## 12. Routing dan Authentication Entry Point
-
-- Route `/` menjadi entry point login untuk guest.
-- Route `/` harus redirect ke `dashboard` jika request sudah memiliki user authenticated.
-- Halaman login dirender melalui Inertia page `auth/login`.
-- Flow autentikasi tetap memakai route dan controller Laravel starter kit agar session, CSRF, remember me, forgot password, dan rate limit auth tetap konsisten.
-- Welcome page bawaan Laravel tidak digunakan sebagai halaman pertama aplikasi.
-
-## 13. Theme Architecture
-
-- React memakai hook `useAppearance` sebagai sumber utama preferensi tema.
-- Nilai tema yang didukung adalah `light`, `dark`, dan `system`.
-- Preferensi disimpan di local storage dengan key yang konsisten.
-- Aplikasi menambahkan atau menghapus class `dark` pada root document agar Tailwind dark variant bekerja global.
-- Toggle tema boleh berbentuk segmented control di area luas dan dropdown icon di header aplikasi.
-- Komponen baru wajib memakai token warna yang kompatibel dengan light dan dark mode.
-- Jangan menyimpan preferensi tema di server untuk MVP kecuali nanti dibutuhkan sinkronisasi lintas device.
+- Supported modes: light, dark, and system.
+- React uses the existing appearance hook as the main source of theme preference.
+- Theme preference is stored consistently.
+- The root document receives/removes `dark` class so Tailwind variants work globally.
+- New components must use theme-compatible color tokens.
+- Do not hardcode colors that work only in one mode.

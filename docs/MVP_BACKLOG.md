@@ -1,234 +1,296 @@
-# MVP Backlog - Kelola Keuangan Keluarga
+# MVP Backlog
 
-Dokumen ini memecah PRD menjadi backlog awal agar development lebih terarah.
+This backlog breaks the PRD into implementation phases. P0 focuses on the core web/PWA finance product. WhatsApp and lazy tracking are planned as an early P1 because they directly address the main product friction: users are often too lazy to record every transaction manually.
 
 ## 1. Foundation
 
-Prioritas: P0
+Priority: P0
 
-- Setup Laravel 13.
-- Pilih React starter kit.
-- Setup Inertia 3 + React 19 + TypeScript.
-- Setup Tailwind CSS 4.
-- Setup shadcn/ui.
-- Setup PWA manifest.
-- Setup service worker.
-- Setup offline fallback.
-- Siapkan app icons untuk Android dan iPhone.
-- Setup MySQL.
-- Setup Redis.
-- Setup Laravel Pint.
-- Setup Pest/PHPUnit.
-- Setup Larastan/PHPStan.
-- Setup base layout dengan sidebar.
-- Setup mobile responsive layout untuk PWA.
-- Setup auth.
-- Setup role dan permission dasar.
+- Set up Laravel 13.
+- Set up React 19 + TypeScript.
+- Set up Inertia 3.
+- Set up Tailwind CSS 4.
+- Set up shadcn/ui style primitives.
+- Set up MySQL.
+- Set up Redis configuration for queue/cache/session when needed.
+- Set up auth.
+- Set up base policies or access services.
+- Set up app layout with sidebar and responsive shell.
+- Set up PWA manifest, icons, service worker, and offline fallback.
+- Set up Laravel Pint.
+- Set up Pest/PHPUnit.
+- Set up Larastan/PHPStan.
+- Set up CI or local quality commands.
 
 Definition of Done:
 
-- User bisa register, login, logout.
-- Layout authenticated dengan sidebar tersedia.
-- Aplikasi punya manifest dan offline fallback.
-- CI atau command lokal untuk test dan format tersedia.
+- User can register, login, and logout.
+- Protected pages require authentication.
+- Authenticated layout is available.
+- PWA manifest and offline fallback exist.
+- Test and format commands are documented.
 
 ## 2. Core Finance
 
-Prioritas: P0
+Priority: P0
 
 - Financial account CRUD.
 - Category CRUD.
-- Income transaction.
-- Expense transaction.
-- Transfer antar akun.
-- Saldo akun otomatis.
-- Soft delete atau archive untuk data finansial penting.
-- Audit log dasar.
+- Income transactions.
+- Expense transactions.
+- Saving transactions.
+- Transfers between accounts.
+- Automatic balance updates.
+- Soft delete/archive for important financial records.
+- Basic audit log structure.
 
 Definition of Done:
 
-- Pemasukan menambah saldo.
-- Pengeluaran mengurangi saldo.
-- Transfer tidak masuk income/expense.
-- Semua mutasi saldo memakai database transaction.
+- Income increases balance.
+- Expense decreases balance.
+- Saving transaction updates saving goal progress and balance when needed.
+- Transfer does not count as income or expense.
+- Balance mutations use database transactions.
+- Account balances can be recalculated.
 
-## 3. Hutang dan Cicilan
+## 3. Debts and Installments
 
-Prioritas: P0
+Priority: P0
 
 - Debt CRUD.
-- Debt payment CRUD.
-- Hitung total sisa hutang.
-- Hitung total cicilan bulan ini.
-- Hitung cicilan sudah dibayar dan belum dibayar.
-- Generate transaksi pengeluaran saat pembayaran hutang.
-- Reminder jatuh tempo dasar.
-- Debt to income ratio.
+- Debt payment flow.
+- Outstanding debt calculation.
+- Monthly installment calculation.
+- Paid/unpaid installment status.
+- Debt payment creates expense transaction.
+- Basic due-date notification.
+- Debt-to-income ratio.
 
 Definition of Done:
 
-- Pembayaran hutang mengurangi saldo akun.
-- Pembayaran hutang mengurangi outstanding debt.
-- Cicilan masuk pengeluaran wajib.
-- AI dan laporan memakai total cicilan sebagai kewajiban bulanan.
+- Debt payment reduces account balance.
+- Debt payment reduces outstanding debt.
+- Debt installment appears as mandatory expense.
+- Reports and AI metrics include debt obligations correctly.
 
-## 4. Budget dan Tabungan
+## 4. Budgets and Saving Goals
 
-Prioritas: P0
+Priority: P0
 
-- Budget bulanan per kategori.
-- Budget total bulanan.
-- Target tabungan.
-- Progress budget.
-- Progress tabungan.
-- Alert budget mendekati limit.
+- Monthly budget by category.
+- Total monthly budget.
+- Saving goals.
+- Budget progress.
+- Saving progress.
+- Budget near-limit alert foundation.
 
 Definition of Done:
 
-- User bisa melihat kategori yang melewati budget.
-- User bisa melihat nominal yang harus ditabung per bulan.
+- User can see budget usage.
+- User can see categories that exceed budget.
+- User can see saving goal progress.
+- Budget calculations are based on recorded expense transactions.
 
-## 5. Dashboard Individu
+## 5. Personal Dashboard
 
-Prioritas: P0
+Priority: P0
 
 - Summary cards.
-- Chart pemasukan vs pengeluaran.
-- Chart pengeluaran per kategori.
-- Pengeluaran terbesar.
-- Hutang jatuh tempo.
-- Progress budget.
-- Progress tabungan.
-- AI insight preview.
-- Quick Menu ke Transaksi, Akun, Kategori, Budget, Tabungan, Hutang, Laporan, AI Insight, dan Keluarga.
+- Income vs expense trend.
+- Expense by category.
+- Largest expenses.
+- Debt due this month.
+- Budget progress.
+- Saving goal progress.
+- AI insight preview placeholder.
+- Quick menu to transactions, accounts, categories, budgets, saving goals, debts, reports, AI insights, and family.
 
 Definition of Done:
 
-- Dashboard menjawab kondisi keuangan bulan berjalan.
-- Data bisa difilter berdasarkan periode.
-- Tampilan responsive dan memakai sidebar.
-- Dashboard nyaman dibuka sebagai PWA di mobile/iPhone.
-- Quick Menu dapat diklik dan mengarah ke halaman fitur yang sesuai.
+- Dashboard answers current monthly financial condition.
+- Data can be filtered by period when supported.
+- Layout is responsive.
+- Dashboard is usable as a PWA on mobile.
+- Quick menu links to the correct pages.
 
 ## 6. PWA MVP
 
-Prioritas: P0
+Priority: P0
 
 - Web app manifest.
-- App icon berbagai ukuran.
+- App icons.
 - Theme color.
 - Standalone display mode.
 - Service worker.
 - Offline fallback page.
-- Cache static asset.
-- Install prompt untuk Android/browser yang mendukung.
-- Install guide untuk iPhone.
-- Safe area support untuk iPhone.
-- Update available prompt.
-- Logout cleanup untuk cache/storage sensitif.
-- Online-first save flow ke database Laravel/MySQL.
-- Offline submit warning untuk form transaksi, hutang, budget, dan tabungan.
+- Static asset caching.
+- Install prompt where supported.
+- Manual iPhone install guide.
+- Safe-area support.
+- Online-first save flow.
+- Offline submit warning for financial forms.
+- Sensitive cache/storage cleanup on logout where applicable.
 
 Definition of Done:
 
-- Aplikasi dapat dipasang ke Home Screen Android.
-- Aplikasi dapat dipasang ke Home Screen iPhone melalui Add to Home Screen.
-- Aplikasi terbuka dalam standalone mode jika browser mendukung.
-- Offline fallback muncul saat koneksi hilang.
-- Data finansial private tidak di-cache sembarangan.
-- Perubahan dari PWA saat online tersimpan ke database dan terlihat di website.
-- Submit saat offline tidak ditandai berhasil sebelum data tersimpan ke server.
+- App can be installed on Android where supported.
+- App can be added to iPhone Home Screen.
+- Offline fallback appears when network is unavailable.
+- Authenticated finance data is not cached carelessly.
+- Online changes are saved to Laravel/MySQL and visible across devices.
+- Offline submit is not marked as successful.
 
 ## 7. Family Management
 
-Prioritas: P0
+Priority: P0
 
 - Create family.
-- Invite member.
-- Accept invitation.
-- Role family admin/member/viewer.
-- Visibility transaksi private/family/shared.
-- Dashboard keluarga dasar.
+- Add existing user as member.
+- Role: admin, member, viewer.
+- Active/inactive membership.
+- Private/family/shared visibility.
+- Basic family dashboard.
 
 Definition of Done:
 
-- Admin keluarga bisa melihat data keluarga sesuai permission.
-- Data private anggota tidak muncul di laporan keluarga.
+- Family admin can manage members.
+- Family reports follow permissions.
+- Private member data does not appear without permission.
+- Inactive members are excluded from active reports.
 
 ## 8. Reports
 
-Prioritas: P0
+Priority: P0
 
-- Laporan cash flow.
-- Laporan kategori.
-- Laporan pengeluaran terbesar.
-- Laporan hutang.
-- Export CSV.
+- Monthly cash flow report.
+- Category report.
+- Largest expense report.
+- Debt report.
+- Saving goal report.
+- CSV export.
 
 Definition of Done:
 
-- Laporan mengikuti filter periode.
-- Export mengikuti permission.
+- Reports follow selected period.
+- Reports use backend metrics.
+- Export follows permissions.
+- Family report does not leak private data.
 
 ## 9. AI MVP
 
-Prioritas: P0
+Priority: P1 unless explicitly prioritized earlier.
 
-- Install dan konfigurasi Laravel AI SDK.
-- Tambahkan `OPENAI_API_KEY` di `.env.example` tanpa nilai rahasia.
-- Buat financial snapshot.
-- Buat monthly analysis agent.
-- Buat saving recommendation agent.
-- Buat debt analysis agent.
-- Simpan hasil AI analysis.
-- Rate limit endpoint AI.
-- Queue job untuk analisis berat.
+- Install and configure Laravel AI SDK.
+- Document `OPENAI_API_KEY` in `.env.example` without a secret value.
+- Build financial metric snapshot.
+- Build monthly analysis agent.
+- Build saving recommendation agent.
+- Build spending recommendation agent.
+- Build debt analysis agent.
+- Store AI analysis output.
+- Rate limit AI endpoints.
+- Run heavy AI analysis through queue.
 
 Definition of Done:
 
-- AI memberi rekomendasi berdasarkan data aktual.
-- AI tidak menghitung angka utama sendiri.
-- AI memperhitungkan cicilan sebelum tabungan/investasi.
-- Output AI disimpan dalam format terstruktur.
+- AI uses backend-calculated metrics.
+- AI does not compute source-of-truth financial numbers.
+- AI considers debt obligations before savings/investment suggestions.
+- AI output is structured and stored.
+- App can fallback when OpenAI key is missing.
 
-## 10. UI Polish
+## 10. WhatsApp Chatbot and Lazy Tracking
 
-Prioritas: P0 untuk theme dasar, P1 untuk polish lanjutan
+Priority: P1, recommended early after core finance is stable.
 
-- Dark mode, light mode, dan system mode.
-- Toggle tema di halaman login, header aplikasi, dan pengaturan tampilan.
-- Route `/` menampilkan login custom untuk guest dan redirect dashboard untuk user authenticated.
-- Login page custom yang responsif dan tidak memakai welcome page bawaan Laravel.
+- Add separate Node.js gateway using `whatsapp-web.js`.
+- Use QR login and persistent local auth.
+- Forward incoming private messages to Laravel.
+- Send Laravel-generated replies back through the gateway.
+- Add internal Laravel endpoint for WhatsApp messages.
+- Add shared-secret validation between Laravel and gateway.
+- Add WhatsApp user settings.
+- Add phone-to-user matching.
+- Add parser for amount formats: `50rb`, `50ribu`, `50k`, `50.000`, `50000`, `1jt`, `1 juta`, and `1,5jt`.
+- Add keyword category mapping, for example fuel/parking/ride-hailing to Transportation.
+- Add transaction draft confirmation flow.
+- Save only after user replies `OK`.
+- Add cancel flow with `Batal`.
+- Add draft expiry.
+- Add daily smart reminder at 21:00 WIB.
+- Skip reminder if user already recorded a transaction that day.
+- Add balance snapshots.
+- Add untracked-money calculation.
+- Add `budget` and `report` WhatsApp commands.
+
+Definition of Done:
+
+- Node gateway contains no finance business logic.
+- Laravel owns parsing, validation, permission, persistence, and replies.
+- `bensin 50rb`, `bensin 50k`, `bensin 50.000`, and `bensin 50000` produce the same amount.
+- WhatsApp-created transactions use existing `TransactionService`.
+- WhatsApp-created transactions affect balance, budget, dashboard, and reports.
+- Reminder is sent at most once per day per user.
+- Untracked money is displayed as a gap, not an automatic transaction.
+- Gateway secrets and session data are not committed.
+
+## 11. UI Polish
+
+Priority: P0 for theme basics, P1 for advanced polish.
+
+- Light, dark, and system theme modes.
+- Theme toggle on login page.
+- Theme toggle in authenticated header.
+- Theme setting page.
+- Custom login page at `/` for guests.
+- Redirect authenticated users from `/` to dashboard.
 - Collapsible sidebar.
-- Global search.
 - Notification dropdown.
 - Better empty states.
-- Better skeleton loading.
-- Responsive table mode.
+- Skeleton loading.
+- Responsive table/list mode.
+- WhatsApp settings page when WhatsApp feature begins.
 
 Definition of Done:
 
-- Aplikasi terlihat modern dan konsisten.
-- UX dashboard nyaman dipakai desktop dan mobile.
-- Tema tetap tersimpan setelah browser dibuka ulang.
-- Semua halaman utama terbaca baik di light mode dan dark mode.
+- UI is consistent and modern.
+- Dashboard is comfortable on desktop and mobile.
+- Theme preference persists.
+- Main pages are readable in light and dark mode.
 
-## 11. Advanced Finance
+## 12. Advanced Finance
 
-Prioritas: P1
+Priority: P1/P2
 
-- Dana darurat detail.
-- Investasi manual.
-- Recurring transaction.
+- Emergency fund detail.
+- Manual investment portfolio.
+- Recurring transactions.
 - Export PDF/Excel.
-- Email notification.
+- Email notifications.
+- Adjustment transaction for confirmed untracked-money gap.
 
-## 12. AI Advanced
+## 13. AI Advanced
 
-Prioritas: P1
+Priority: P2
 
 - AI chat.
-- AI klasifikasi transaksi.
-- AI deteksi anomali.
+- AI classification.
+- AI anomaly detection.
 - Predictive cash flow.
-- Evaluasi action plan.
+- Action plan evaluation.
+
+## 14. Future Production WhatsApp Migration
+
+Priority: P2 or production-readiness phase.
+
+- Replace `whatsapp-web.js` gateway with Meta WhatsApp Cloud API.
+- Keep Laravel WhatsApp services unchanged.
+- Add official webhook verification.
+- Add template-message support where required.
+- Add production compliance and monitoring.
+
+Definition of Done:
+
+- Provider swap does not rewrite finance domain logic.
+- Laravel still owns command parsing and transaction creation.
+- Existing WhatsApp tests still pass through provider abstraction.
