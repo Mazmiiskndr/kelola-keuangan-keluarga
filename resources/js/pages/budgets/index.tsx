@@ -69,16 +69,16 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Budget">
             <Head title="Budget" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="Budget Bulanan"
                     description="Tetapkan batas pengeluaran per kategori agar kebutuhan wajib, lifestyle, dan potensi hemat terlihat jelas."
                     icon={FolderKanban}
                 />
                 <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between gap-3">
                                 <CardTitle>{editingBudgetId ? 'Edit Budget' : 'Tambah Budget'}</CardTitle>
@@ -95,7 +95,7 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={submit}>
+                            <form noValidate className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
                                     <RequiredLabel>Kategori</RequiredLabel>
                                     <FinanceSelect
@@ -128,17 +128,18 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
                             </form>
                         </CardContent>
                     </Card>
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <CardTitle>Daftar Budget</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {budgets.map((budget) => (
-                                <div key={budget.id} className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                                <div key={budget.id} className="finance-panel-list">
                                     <div>
                                         <p className="font-medium">{budget.category?.name ?? 'Kategori'}</p>
                                         <p className="text-muted-foreground text-sm">
-                                            <DateTimeDisplay value={budget.period_start} dateOnly /> s/d <DateTimeDisplay value={budget.period_end} dateOnly />
+                                            <DateTimeDisplay value={budget.period_start} dateOnly /> s/d{' '}
+                                            <DateTimeDisplay value={budget.period_end} dateOnly />
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">

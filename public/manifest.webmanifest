@@ -1,6 +1,6 @@
 {
-    "name": "Kelola Keuangan Keluarga",
-    "short_name": "Keuangan",
+    "name": "Finanxyra",
+    "short_name": "Finanxyra",
     "description": "Aplikasi pengelolaan pemasukan, pengeluaran, hutang, tabungan, investasi, dan rekomendasi AI keluarga.",
     "start_url": "/dashboard",
     "scope": "/",

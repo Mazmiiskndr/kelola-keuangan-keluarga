@@ -150,9 +150,9 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Transaksi">
             <Head title="Transaksi" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="Transaksi"
                     description="Catat pemasukan, pengeluaran, dan transfer antar akun. Perubahan saldo dihitung oleh service Laravel."
@@ -161,7 +161,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
 
                 <div className="grid gap-4 xl:grid-cols-[520px_1fr]">
                     <div className="space-y-4">
-                        <Card className="rounded-lg">
+                        <Card>
                             <CardHeader>
                                 <div className="flex items-center justify-between gap-3">
                                     <CardTitle>{editingTransactionId ? 'Edit Transaksi' : 'Tambah Transaksi'}</CardTitle>
@@ -178,7 +178,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <form className="space-y-4" onSubmit={submit}>
+                                <form noValidate className="space-y-4" onSubmit={submit}>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
                                             <RequiredLabel>Tipe</RequiredLabel>
@@ -310,14 +310,14 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-lg">
+                        <Card>
                             <CardHeader>
                                 <CardTitle className="inline-flex items-center gap-2">
                                     <ArrowRightLeft className="size-4" /> Transfer
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <form className="space-y-4" onSubmit={submitTransfer}>
+                                <form noValidate className="space-y-4" onSubmit={submitTransfer}>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
                                             <RequiredLabel>Dari</RequiredLabel>
@@ -370,7 +370,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                         </Card>
                     </div>
 
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <CardTitle>Riwayat Transaksi</CardTitle>
@@ -389,12 +389,10 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                 <p className="text-muted-foreground rounded-lg border p-4 text-sm">Belum ada transaksi untuk tipe ini.</p>
                             )}
                             {transactions.data.map((transaction) => (
-                                <div key={transaction.id} className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                                <div key={transaction.id} className="finance-panel-list">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <p className="font-medium">
-                                                {transactionTitle(transaction)}
-                                            </p>
+                                            <p className="font-medium">{transactionTitle(transaction)}</p>
                                             <FinanceBadge value={transaction.type} />
                                         </div>
                                         <p className="text-muted-foreground mt-1 text-sm">

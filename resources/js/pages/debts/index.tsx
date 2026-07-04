@@ -139,9 +139,9 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Hutang">
             <Head title="Hutang" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="Hutang dan Cicilan"
                     description="Catat pinjaman, kartu kredit, cicilan, jatuh tempo, dan pembayaran bulanan agar masuk dalam perhitungan pengeluaran wajib."
@@ -149,7 +149,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                 />
                 <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
                     <div className="space-y-4">
-                        <Card className="rounded-lg">
+                        <Card>
                             <CardHeader>
                                 <div className="flex items-center justify-between gap-3">
                                     <CardTitle>{editingDebtId ? 'Edit Hutang' : 'Tambah Hutang'}</CardTitle>
@@ -166,7 +166,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <form className="space-y-4" onSubmit={submit}>
+                                <form noValidate className="space-y-4" onSubmit={submit}>
                                     <div className="space-y-2">
                                         <RequiredLabel>Nama</RequiredLabel>
                                         <Input
@@ -289,12 +289,12 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-lg">
+                        <Card>
                             <CardHeader>
                                 <CardTitle>Bayar Cicilan</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <form className="space-y-4" onSubmit={pay}>
+                                <form noValidate className="space-y-4" onSubmit={pay}>
                                     <div className="space-y-2">
                                         <RequiredLabel>Hutang</RequiredLabel>
                                         <FinanceSelect
@@ -339,7 +339,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                         </Card>
                     </div>
 
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <CardTitle>Daftar Hutang</CardTitle>
                         </CardHeader>

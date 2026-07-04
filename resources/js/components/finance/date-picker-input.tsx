@@ -158,7 +158,7 @@ export function DatePickerInput({ value, onValueChange, placeholder, className, 
                         setOpen(false);
                     }}
                 />
-                <div className="border-t px-3 pb-3 pt-2">
+                <div className="border-t px-3 pt-2 pb-3">
                     <div className="flex flex-wrap gap-2">
                         {DATE_PRESETS.map((preset) => (
                             <Button

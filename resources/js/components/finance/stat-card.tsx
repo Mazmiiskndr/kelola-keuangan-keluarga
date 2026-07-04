@@ -10,6 +10,7 @@ interface StatCardProps {
     description?: string;
     icon: LucideIcon;
     tone?: 'blue' | 'green' | 'red' | 'amber' | 'violet' | 'slate';
+    sparkline?: number[];
 }
 
 const tones = {
@@ -21,23 +22,54 @@ const tones = {
     slate: 'bg-slate-50 text-slate-700 dark:bg-slate-900 dark:text-slate-300',
 };
 
-export function StatCard({ title, value, description, icon: Icon, tone = 'slate' }: StatCardProps) {
+const lines = {
+    blue: 'stroke-blue-500',
+    green: 'stroke-emerald-500',
+    red: 'stroke-rose-500',
+    amber: 'stroke-amber-500',
+    violet: 'stroke-violet-500',
+    slate: 'stroke-slate-500',
+};
+
+export function StatCard({ title, value, description, icon: Icon, tone = 'slate', sparkline }: StatCardProps) {
     return (
-        <Card className="overflow-hidden rounded-lg border-slate-200 shadow-sm dark:border-slate-800">
+        <Card className="overflow-hidden">
             <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className="text-muted-foreground text-xs font-medium">{title}</p>
-                        <p className="mt-2 text-xl font-semibold tracking-normal text-slate-950 dark:text-white">
-                            <MoneyDisplay value={value} />
-                        </p>
-                    </div>
-                    <div className={cn('rounded-md p-2', tones[tone])}>
+                <div className="flex items-start gap-3">
+                    <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', tones[tone])}>
                         <Icon className="size-4" />
                     </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{title}</p>
+                        <p className="mt-3 text-2xl font-semibold tracking-normal text-slate-950 dark:text-white">
+                            <MoneyDisplay value={value} />
+                        </p>
+                        {description && <p className="text-muted-foreground mt-2 text-xs">{description}</p>}
+                    </div>
                 </div>
-                {description && <p className="text-muted-foreground mt-3 text-xs">{description}</p>}
+                <Sparkline data={sparkline} tone={tone} />
             </CardContent>
         </Card>
+    );
+}
+
+function Sparkline({ data, tone }: { data?: number[]; tone: NonNullable<StatCardProps['tone']> }) {
+    const points = data && data.length >= 2 ? data : [2, 3, 4, 4, 5, 5, 6, 6];
+    const max = Math.max(...points);
+    const min = Math.min(...points);
+    const spread = max - min || 1;
+    const path = points
+        .map((value, index) => {
+            const x = (index / (points.length - 1)) * 100;
+            const y = 24 - ((value - min) / spread) * 18;
+
+            return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
+        })
+        .join(' ');
+
+    return (
+        <svg className="mt-2 h-8 w-full" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+            <path d={path} fill="none" className={cn(lines[tone])} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
     );
 }

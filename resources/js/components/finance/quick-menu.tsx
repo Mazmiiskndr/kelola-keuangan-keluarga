@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 import {
@@ -10,6 +10,7 @@ import {
     Goal,
     HandCoins,
     ReceiptText,
+    Settings,
     Tags,
     Users,
     type LucideIcon,
@@ -87,32 +88,54 @@ const quickMenuItems: QuickMenuItem[] = [
         icon: Users,
         tone: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
     },
+    {
+        title: 'Pengaturan',
+        description: 'Atur preferensi akun',
+        href: '/settings/profile',
+        icon: Settings,
+        tone: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+    },
 ];
 
 export function QuickMenu() {
     return (
-        <Card className="rounded-lg border-slate-200 shadow-sm dark:border-slate-800">
-            <CardHeader>
-                <CardTitle>Quick Menu</CardTitle>
-                <CardDescription>Akses cepat ke fitur utama aplikasi keuangan.</CardDescription>
+        <Card className="overflow-hidden border-none bg-gradient-to-r from-white to-slate-50 shadow-sm dark:from-slate-950 dark:to-slate-900">
+            <CardHeader className="pt-5 pb-3">
+                <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <CardTitle className="text-lg font-bold text-slate-800 dark:text-white">🚀 Akses Cepat</CardTitle>
+                        <p className="text-muted-foreground mt-1 text-xs">Jalan pintas menuju fitur-fitur yang paling sering Anda butuhkan.</p>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="scrollbar-hide flex gap-4 overflow-x-auto pt-2 pb-4">
                     {quickMenuItems.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
                             prefetch
-                            className="group flex min-h-24 items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900 dark:focus-visible:ring-white"
+                            className={cn(
+                                'group flex h-11 shrink-0 items-center justify-center rounded-xl border border-white/50 px-5 text-sm font-semibold shadow-sm transition-all hover:scale-105 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:border-white/10',
+                                item.tone,
+                            )}
                         >
-                            <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-md', item.tone)}>
-                                <item.icon className="size-5" />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold text-slate-950 dark:text-white">{item.title}</span>
-                                <span className="text-muted-foreground mt-1 block text-xs leading-5">{item.description}</span>
-                            </span>
-                            <ArrowRight className="size-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-700 dark:group-hover:text-slate-200" />
+                            {item.title === 'Transaksi'
+                                ? 'Tambah Transaksi'
+                                : item.title === 'Akun'
+                                  ? 'Tambah Rekening'
+                                  : item.title === 'Hutang'
+                                    ? 'Bayar Hutang'
+                                    : item.title === 'Tabungan'
+                                      ? 'Tambah Tabungan'
+                                      : item.title === 'Laporan'
+                                        ? 'Lihat Laporan'
+                                        : item.title === 'AI Insight'
+                                          ? 'Tanya AI'
+                                          : item.title === 'Keluarga'
+                                            ? 'Kelola Keluarga'
+                                            : item.title}
+                            <ArrowRight className="ml-2 size-4 opacity-50 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
                         </Link>
                     ))}
                 </div>

@@ -76,16 +76,16 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Tabungan">
             <Head title="Tabungan" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="Target Tabungan"
                     description="Buat target dana darurat, liburan, pendidikan, atau pembelian besar. AI akan memakai data ini saat menghitung rekomendasi hemat."
                     icon={Goal}
                 />
                 <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between gap-3">
                                 <CardTitle>{editingGoalId ? 'Edit Target' : 'Tambah Target'}</CardTitle>
@@ -102,7 +102,7 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={submit}>
+                            <form noValidate className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
                                     <RequiredLabel>Nama target</RequiredLabel>
                                     <Input
@@ -168,7 +168,7 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                             </form>
                         </CardContent>
                     </Card>
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <CardTitle>Progress Tabungan</CardTitle>
                         </CardHeader>

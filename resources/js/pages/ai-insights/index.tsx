@@ -28,9 +28,9 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="AI Insight">
             <Head title="AI Insight" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="AI Insight Keuangan"
                     description="Buat rekomendasi hemat, prioritas tabungan, dan arahan investasi dari metrik yang sudah dihitung backend."
@@ -42,7 +42,7 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
                             <CardTitle>Generate Analisis</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={submit}>
+                            <form noValidate className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
                                     <Label>Periode</Label>
                                     <MonthPickerInput value={form.data.period} onValueChange={(value) => form.setData('period', value)} />

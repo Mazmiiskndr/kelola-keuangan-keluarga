@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Password settings',
+        title: 'Pengaturan',
         href: '/settings/password',
     },
 ];
@@ -49,14 +49,14 @@ export default function Password() {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Profile settings" />
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Pengaturan">
+            <Head title="Pengaturan Password" />
 
             <SettingsLayout>
-                <div className="space-y-6">
-                    <HeadingSmall title="Update password" description="Ensure your account is using a long, random password to stay secure" />
+                <div className="app-surface space-y-6 rounded-lg p-6">
+                    <HeadingSmall title="Keamanan" description="Pastikan akun memakai password yang aman." />
 
-                    <form onSubmit={updatePassword} className="space-y-6">
+                    <form noValidate onSubmit={updatePassword} className="space-y-6">
                         <div className="grid gap-2">
                             <Label htmlFor="current_password">Current password</Label>
 
@@ -108,7 +108,7 @@ export default function Password() {
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save password</Button>
+                            <Button disabled={processing}>Simpan Password</Button>
 
                             <Transition
                                 show={recentlySuccessful}

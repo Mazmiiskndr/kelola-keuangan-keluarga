@@ -41,9 +41,9 @@ export default function ReportsIndex({ report, families }: ReportsProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Laporan">
             <Head title="Laporan" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="Laporan Bulanan"
                     description="Ringkasan performa keuangan, pengeluaran per kategori, hutang, tabungan, dan tren untuk bahan evaluasi bulanan."

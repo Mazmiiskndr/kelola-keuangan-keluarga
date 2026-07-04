@@ -12,7 +12,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { type Family, type FamilyMember } from '@/types/finance';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Trash2, UserPlus, Users } from 'lucide-react';
+import { Check, Trash2, UserPlus } from 'lucide-react';
 import type React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Keluarga', href: '/families' }];
@@ -44,6 +44,7 @@ function FamilyMemberForm({ family }: FamilyMemberFormProps) {
 
     return (
         <form
+            noValidate
             className="mt-4 grid gap-3 rounded-lg border bg-slate-50 p-3 md:grid-cols-[1fr_180px_180px] md:items-start dark:bg-slate-900"
             onSubmit={submit}
         >
@@ -88,21 +89,111 @@ export default function FamiliesIndex({ families }: FamiliesProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Keluarga">
             <Head title="Keluarga" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-                <PageHeader
-                    title="Ruang Keluarga"
-                    description="Siapkan struktur keluarga agar admin dapat melihat pemasukan, pengeluaran, hutang, dan laporan sesuai permission."
-                    icon={Users}
-                />
-                <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
-                    <Card className="rounded-lg">
+            <div className="finance-page">
+                <PageHeader title="Keluarga" description="Kelola owner, member, akun keluarga, dan audit akses." />
+                <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                    <Card className="min-h-[400px]">
+                        <CardHeader>
+                            <CardTitle>{families[0]?.name ? `Anggota ${families[0].name}` : 'Anggota Keluarga'}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            {families[0]?.members?.map((member) => (
+                                <div key={member.id} className="flex items-center gap-4">
+                                    <span className="flex size-10 items-center justify-center rounded-full bg-blue-50 font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-200">
+                                        {(member.user?.name ?? member.user?.email ?? 'A').charAt(0)}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="truncate font-semibold text-slate-950 dark:text-white">{member.user?.name ?? 'Anggota'}</p>
+                                        <p className="text-muted-foreground truncate text-sm">
+                                            {families[0].owner_user_id === member.user_id ? 'Owner' : member.role} -{' '}
+                                            {member.user?.email ?? 'akses akun keluarga aktif'}
+                                        </p>
+                                    </div>
+                                    <div className="ml-auto flex shrink-0 items-center gap-2">
+                                        <FinanceBadge value={families[0].owner_user_id === member.user_id ? 'owner' : member.role} />
+                                        {families[0].can_manage && families[0].owner_user_id !== member.user_id && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeMember(families[0], member)}
+                                                aria-label="Hapus anggota"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {families.length === 0 && (
+                                <form noValidate className="space-y-4" onSubmit={submit}>
+                                    <div className="space-y-2">
+                                        <RequiredLabel>Nama keluarga</RequiredLabel>
+                                        <Input
+                                            value={form.data.name}
+                                            onChange={(event) => form.setData('name', event.target.value)}
+                                            placeholder="Keluarga Azmi"
+                                        />
+                                        <FormError message={form.errors.name} />
+                                    </div>
+                                    <SubmitButton processing={form.processing}>Buat Keluarga</SubmitButton>
+                                </form>
+                            )}
+                            {families[0]?.can_manage && <FamilyMemberForm family={families[0]} />}
+                        </CardContent>
+                    </Card>
+                    <Card className="min-h-[400px]">
+                        <CardHeader>
+                            <CardTitle>Permission Matrix</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {[
+                                'Owner dapat memakai akun member',
+                                'Member dapat memakai akun owner',
+                                'Private tetap tampil jika satu keluarga aktif',
+                                'Transaksi mencatat dibuat oleh siapa',
+                                'Edit saldo tercatat di aktivitas',
+                            ].map((permission) => (
+                                <div key={permission} className="flex items-center gap-4">
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
+                                        <Check className="size-4" />
+                                    </span>
+                                    <p className="text-sm text-slate-800 dark:text-slate-200">{permission}</p>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+                {families.length > 1 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Daftar Keluarga Lain</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 md:grid-cols-2">
+                            {families.slice(1).map((family) => (
+                                <div key={family.id} className="finance-panel-list">
+                                    <div>
+                                        <p className="font-semibold">{family.name}</p>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            <FinanceBadge value={family.role} />
+                                            <FinanceBadge value={family.currency} />
+                                        </div>
+                                    </div>
+                                    <Badge variant="outline">{family.members?.length ?? 0} anggota</Badge>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
+                {families.length > 0 && families.every((family) => !family.can_manage) && (
+                    <Card>
                         <CardHeader>
                             <CardTitle>Buat Keluarga</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={submit}>
+                            <form noValidate className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
                                     <RequiredLabel>Nama keluarga</RequiredLabel>
                                     <Input
@@ -116,72 +207,7 @@ export default function FamiliesIndex({ families }: FamiliesProps) {
                             </form>
                         </CardContent>
                     </Card>
-                    <Card className="rounded-lg">
-                        <CardHeader>
-                            <CardTitle>Daftar Keluarga</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {families.map((family) => (
-                                <div key={family.id} className="rounded-lg border p-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <p className="truncate font-medium">{family.name}</p>
-                                                <FinanceBadge value={family.role} />
-                                            </div>
-                                            <div className="mt-2 flex flex-wrap gap-2">
-                                                <FinanceBadge value={family.currency} />
-                                                {family.can_manage && <Badge variant="outline">Bisa kelola anggota</Badge>}
-                                            </div>
-                                        </div>
-                                        <Badge variant="outline">{family.members?.length ?? 0} anggota</Badge>
-                                    </div>
-
-                                    {family.can_manage && <FamilyMemberForm family={family} />}
-
-                                    <div className="mt-4 grid gap-2">
-                                        {family.members?.map((member) => {
-                                            const isOwner = family.owner_user_id === member.user_id;
-
-                                            return (
-                                                <div
-                                                    key={member.id}
-                                                    className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm dark:bg-slate-900"
-                                                >
-                                                    <div className="min-w-0">
-                                                        <p className="truncate font-medium">{member.user?.name ?? member.user?.email ?? 'Anggota'}</p>
-                                                        <p className="text-muted-foreground truncate text-xs">{member.user?.email}</p>
-                                                    </div>
-                                                    <div className="flex shrink-0 items-center gap-2">
-                                                        {isOwner && <FinanceBadge value="owner" />}
-                                                        <FinanceBadge value={member.role} />
-                                                        <FinanceBadge value={member.status} />
-                                                        {family.can_manage && !isOwner && (
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => removeMember(family, member)}
-                                                                aria-label="Hapus anggota"
-                                                            >
-                                                                <Trash2 className="size-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                            {families.length === 0 && (
-                                <p className="text-muted-foreground text-sm">
-                                    Belum ada keluarga. Buat keluarga dulu untuk mulai melihat laporan keluarga.
-                                </p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                )}
             </div>
         </AppLayout>
     );

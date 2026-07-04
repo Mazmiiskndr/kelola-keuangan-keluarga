@@ -1,14 +1,12 @@
-import AppLogoIcon from './app-logo-icon';
-
 export default function AppLogo() {
     return (
         <>
-            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-md">
-                <AppLogoIcon className="size-5 fill-current text-white dark:text-black" />
-            </div>
-            <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-none font-semibold">Kelola Keuangan</span>
-                <span className="text-muted-foreground truncate text-xs">Keluarga</span>
+            <span className="flex size-10 shrink-0 items-center justify-center group-data-[collapsible=icon]:mr-1 group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:pr-2">
+                <img src="/favicon.svg" alt="Finanxyra" className="size-full" />
+            </span>
+            <div className="ml-2 grid flex-1 text-left text-sm group-data-[collapsible=icon]:hidden">
+                <span className="mb-1 truncate text-lg leading-none font-semibold text-white">Finanxyra</span>
+                <span className="truncate text-xs text-blue-100">Kelola Keuangan Keluarga</span>
             </div>
         </>
     );

@@ -72,9 +72,9 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Kategori">
             <Head title="Kategori" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="Kategori Transaksi"
                     description="Kelompokkan pemasukan dan pengeluaran agar laporan dan rekomendasi AI lebih akurat."
@@ -82,7 +82,7 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                 />
 
                 <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between gap-3">
                                 <CardTitle>{editingCategoryId ? 'Edit Kategori' : 'Tambah Kategori'}</CardTitle>
@@ -99,7 +99,7 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={submit}>
+                            <form noValidate className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
                                     <RequiredLabel htmlFor="name">Nama</RequiredLabel>
                                     <Input
@@ -160,13 +160,13 @@ export default function CategoriesIndex({ categories }: CategoriesProps) {
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <CardTitle>Daftar Kategori</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-3 md:grid-cols-2">
                             {categories.map((category) => (
-                                <div key={category.id} className="flex items-center justify-between gap-3 rounded-lg border p-4">
+                                <div key={category.id} className="finance-panel-list">
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2">
                                             <span className="size-3 rounded-full" style={{ backgroundColor: category.color || '#64748b' }} />

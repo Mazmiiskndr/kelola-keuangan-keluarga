@@ -9,19 +9,19 @@ import SettingsLayout from '@/layouts/settings/layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Appearance settings',
+        title: 'Pengaturan',
         href: '/settings/appearance',
     },
 ];
 
 export default function Appearance() {
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Appearance settings" />
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Pengaturan">
+            <Head title="Pengaturan Tampilan" />
 
             <SettingsLayout>
-                <div className="space-y-6">
-                    <HeadingSmall title="Appearance settings" description="Update your account's appearance settings" />
+                <div className="app-surface space-y-6 rounded-lg p-6">
+                    <HeadingSmall title="Tampilan" description="Atur mode terang, gelap, atau mengikuti sistem." />
                     <AppearanceTabs />
                 </div>
             </SettingsLayout>

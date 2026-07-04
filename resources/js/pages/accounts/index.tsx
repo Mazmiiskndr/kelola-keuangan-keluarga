@@ -106,9 +106,9 @@ export default function AccountsIndex({ accounts, families }: AccountsProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} pageTitle="Akun">
             <Head title="Akun" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="finance-page">
                 <PageHeader
                     title="Akun Keuangan"
                     description="Kelola rekening per bank atau e-wallet, misalnya BRI - Moch Azmi Iskandar dengan saldo masing-masing."
@@ -116,7 +116,7 @@ export default function AccountsIndex({ accounts, families }: AccountsProps) {
                 />
 
                 <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between gap-3">
                                 <CardTitle>{editingAccountId ? 'Edit Rekening' : 'Tambah Rekening'}</CardTitle>
@@ -133,7 +133,7 @@ export default function AccountsIndex({ accounts, families }: AccountsProps) {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={submit}>
+                            <form noValidate className="space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">
                                     <RequiredLabel htmlFor="type">Tipe</RequiredLabel>
                                     <FinanceSelect
@@ -234,13 +234,13 @@ export default function AccountsIndex({ accounts, families }: AccountsProps) {
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-lg">
+                    <Card>
                         <CardHeader>
                             <CardTitle>Daftar Rekening</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {accounts.map((account) => (
-                                <div key={account.id} className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                                <div key={account.id} className="finance-panel-list">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className="font-medium">{accountLabel(account)}</p>
@@ -251,7 +251,9 @@ export default function AccountsIndex({ accounts, families }: AccountsProps) {
                                                 <span className="text-muted-foreground text-sm">{account.account_number}</span>
                                             )}
                                             {(account.owner?.name || account.user?.name) && (
-                                                <span className="text-muted-foreground text-sm">Pemilik: {account.owner?.name ?? account.user?.name}</span>
+                                                <span className="text-muted-foreground text-sm">
+                                                    Pemilik: {account.owner?.name ?? account.user?.name}
+                                                </span>
                                             )}
                                             <FinanceBadge value={account.visibility} />
                                             <FinanceBadge value={account.currency} />

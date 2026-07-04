@@ -70,13 +70,7 @@ export function SimpleBarChart({ data }: SimpleBarChartProps) {
                         );
                     })}
 
-                    <line
-                        x1={chart.left}
-                        x2={chart.left}
-                        y1={chart.top}
-                        y2={baselineY}
-                        className="stroke-slate-200 dark:stroke-slate-800"
-                    />
+                    <line x1={chart.left} x2={chart.left} y1={chart.top} y2={baselineY} className="stroke-slate-200 dark:stroke-slate-800" />
 
                     {data.map((item, index) => (
                         <text
