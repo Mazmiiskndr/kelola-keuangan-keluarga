@@ -3,14 +3,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { usePwaInstallPrompt } from '@/hooks/use-pwa-install-prompt';
 import { cn } from '@/lib/utils';
 import { BadgeCheck, Smartphone, X } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface PwaInstallBannerProps {
     compact?: boolean;
     className?: string;
+    onVisibleChange?: (visible: boolean) => void;
 }
 
-export function PwaInstallBanner({ compact = false, className }: PwaInstallBannerProps) {
+export function PwaInstallBanner({ compact = false, className, onVisibleChange }: PwaInstallBannerProps) {
     const { canInstall, canNativeInstall, install, dismiss, showManualGuide, setShowManualGuide, isIos } = usePwaInstallPrompt();
+
+    useEffect(() => {
+        onVisibleChange?.(canInstall);
+    }, [canInstall, onVisibleChange]);
 
     if (!canInstall) {
         return null;

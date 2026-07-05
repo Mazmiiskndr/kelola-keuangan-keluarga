@@ -1,4 +1,5 @@
 import { NotificationDropdown } from '@/components/notification-dropdown';
+import { ThemeModeSwitch } from '@/components/theme-mode-switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -66,6 +67,7 @@ export function AppSidebarHeader({ breadcrumbs = [], pageTitle }: { breadcrumbs?
                 <p className="hidden shrink-0 text-sm font-semibold text-slate-600 lg:block dark:text-slate-300">{title}</p>
             </div>
             <TooltipProvider delayDuration={0}>
+                <ThemeModeSwitch />
                 <NotificationDropdown />
                 <Tooltip>
                     <TooltipTrigger asChild>

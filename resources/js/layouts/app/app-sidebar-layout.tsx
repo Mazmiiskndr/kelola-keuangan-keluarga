@@ -2,7 +2,6 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
-import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { type BreadcrumbItem } from '@/types';
 
 export default function AppSidebarLayout({
@@ -20,9 +19,7 @@ export default function AppSidebarLayout({
             <AppContent variant="sidebar">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} pageTitle={pageTitle} />
                 {children}
-                <div className="px-4 pb-4 md:px-6">
-                    <PwaInstallBanner />
-                </div>
+                <footer className="text-muted-foreground px-4 pb-6 text-center text-xs font-medium md:px-6">2026 Created by Mazmiiskndr</footer>
             </AppContent>
         </AppShell>
     );

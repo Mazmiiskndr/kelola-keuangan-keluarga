@@ -30,6 +30,7 @@ Route::get('/', function (Request $request) {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::post('dashboard/scope', [DashboardController::class, 'scope'])->name('dashboard.scope');
 
     Route::resource('accounts', FinancialAccountController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('categories', CategoryController::class)->only(['index', 'store', 'update', 'destroy']);

@@ -1,11 +1,13 @@
 import { DateTimeDisplay } from '@/components/finance/date-display';
 import { FinanceBadge } from '@/components/finance/finance-badge';
+import { FinanceSelect } from '@/components/finance/finance-select';
 import { MoneyDisplay } from '@/components/finance/money-display';
 import { PageHeader } from '@/components/finance/page-header';
 import { ProgressRow } from '@/components/finance/progress-row';
 import { QuickMenu } from '@/components/finance/quick-menu';
 import { SimpleBarChart } from '@/components/finance/simple-bar-chart';
 import { StatCard } from '@/components/finance/stat-card';
+import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
@@ -14,6 +16,7 @@ import { type BreadcrumbItem } from '@/types';
 import { type Family, type SummaryMetric } from '@/types/finance';
 import { Head, router } from '@inertiajs/react';
 import { ArrowDownRight, ArrowUpRight, Bot, CreditCard, PiggyBank } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -32,16 +35,43 @@ export default function Dashboard({ summary, families }: DashboardProps) {
     const currentScope = summary.scope ?? 'personal';
     const selectedFamilyId = summary.family?.id ? String(summary.family.id) : families[0]?.id ? String(families[0].id) : '';
     const accounts = summary.accounts ?? [];
+    const installDockRef = useRef<HTMLDivElement>(null);
+    const [isInstallDocked, setIsInstallDocked] = useState(false);
+    const [isInstallPromptVisible, setIsInstallPromptVisible] = useState(false);
+
+    useEffect(() => {
+        const dock = installDockRef.current;
+
+        if (!dock) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(([entry]) => setIsInstallDocked(entry.isIntersecting), {
+            root: null,
+            rootMargin: '0px 0px -24px 0px',
+            threshold: 0.01,
+        });
+
+        observer.observe(dock);
+
+        return () => observer.disconnect();
+    }, []);
 
     function openScope(scope: string) {
-        router.get('/dashboard', scope === 'family' && selectedFamilyId ? { scope: 'family', family_id: selectedFamilyId } : {}, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        router.post(
+            '/dashboard/scope',
+            {
+                scope,
+                family_id: scope === 'family' ? selectedFamilyId : null,
+            },
+            {
+                preserveScroll: true,
+            },
+        );
     }
 
     function openFamily(familyId: string) {
-        router.get('/dashboard', { scope: 'family', family_id: familyId }, { preserveState: true, preserveScroll: true });
+        router.post('/dashboard/scope', { scope: 'family', family_id: familyId }, { preserveScroll: true });
     }
 
     return (
@@ -52,7 +82,7 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                     title="Dashboard Keuangan"
                     description="Pantau saldo, pemasukan, pengeluaran, hutang jatuh tempo, tabungan, dan pola pengeluaran terbesar dalam satu layar."
                     action={
-                        <Badge variant="outline" className="rounded-full bg-white px-4 py-3 text-xs font-semibold dark:bg-slate-950">
+                        <Badge variant="outline" className="rounded-md bg-white px-4 py-3 text-xs font-semibold dark:bg-slate-950">
                             Periode <DateTimeDisplay value={summary.period.start} dateOnly /> s/d{' '}
                             <DateTimeDisplay value={summary.period.end} dateOnly />
                         </Badge>
@@ -62,13 +92,17 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                 <QuickMenu />
 
                 <Card>
-                    <CardContent className="grid gap-5 p-5 lg:grid-cols-[220px_1fr_auto] lg:items-center">
+                    <CardContent className="grid gap-5 p-5 lg:grid-cols-[280px_1fr_auto] lg:items-center">
                         <div>
                             <p className="text-sm font-semibold text-slate-950 dark:text-white">Mode dashboard</p>
-                            <div className="mt-2 flex rounded-full bg-slate-100 p-1 dark:bg-slate-900">
+                            <div className="border-input mt-2 grid h-12 w-full max-w-72 grid-cols-2 rounded-md border bg-slate-50 p-[6px] shadow-sm dark:bg-slate-950">
                                 <button
                                     type="button"
-                                    className={`rounded-full px-4 py-1.5 text-xs font-semibold ${currentScope === 'personal' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-800' : 'text-muted-foreground'}`}
+                                    className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${
+                                        currentScope === 'personal'
+                                            ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                                            : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
+                                    }`}
                                     onClick={() => openScope('personal')}
                                 >
                                     Pribadi
@@ -76,29 +110,47 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                                 {families.length > 0 && (
                                     <button
                                         type="button"
-                                        className={`rounded-full px-4 py-1.5 text-xs font-semibold ${currentScope === 'family' ? 'bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-950 dark:text-blue-200' : 'text-muted-foreground'}`}
+                                        className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${
+                                            currentScope === 'family'
+                                                ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                                                : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
+                                        }`}
                                         onClick={() => openScope('family')}
                                     >
                                         Keluarga aktif
+                                    </button>
+                                )}
+                                {families.length === 0 && (
+                                    <button
+                                        type="button"
+                                        className="text-muted-foreground flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap"
+                                        disabled
+                                    >
+                                        Keluarga
                                     </button>
                                 )}
                             </div>
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-slate-950 dark:text-white">Keluarga aktif</p>
-                            <select
-                                value={selectedFamilyId}
-                                onChange={(event) => openFamily(event.target.value)}
-                                disabled={families.length === 0}
-                                className="mt-2 h-9 w-full max-w-64 rounded-full border border-slate-200 bg-white px-4 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-950"
-                            >
-                                {families.length === 0 && <option>Tidak ada keluarga</option>}
-                                {families.map((family) => (
-                                    <option key={family.id} value={family.id}>
-                                        {family.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="mt-2 w-full max-w-64">
+                                {families.length === 0 ? (
+                                    <div className="border-input text-muted-foreground flex h-12 items-center rounded-md border bg-white px-4 text-sm dark:bg-slate-950">
+                                        Tidak ada keluarga
+                                    </div>
+                                ) : (
+                                    <FinanceSelect
+                                        value={selectedFamilyId}
+                                        onValueChange={openFamily}
+                                        options={families.map((family) => ({
+                                            value: family.id.toString(),
+                                            label: family.name,
+                                        }))}
+                                        placeholder="Pilih keluarga"
+                                        searchPlaceholder="Cari keluarga..."
+                                    />
+                                )}
+                            </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {summary.family_role && (
@@ -317,6 +369,17 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                             )}
                         </CardContent>
                     </Card>
+                </div>
+
+                <div ref={installDockRef} className={isInstallPromptVisible ? 'relative min-h-[116px] md:min-h-[108px]' : 'relative'}>
+                    <PwaInstallBanner
+                        onVisibleChange={setIsInstallPromptVisible}
+                        className={
+                            isInstallDocked
+                                ? 'shadow-2xl'
+                                : 'fixed right-4 bottom-4 left-4 z-50 shadow-2xl md:right-6 md:bottom-6 md:left-[calc(var(--sidebar-width)+1.5rem)]'
+                        }
+                    />
                 </div>
             </div>
         </AppLayout>
