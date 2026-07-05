@@ -14,6 +14,7 @@ The product should support two tracking modes:
 
 - Detailed tracking: users record income, expenses, transfers, debts, savings, and budgets through the website or WhatsApp.
 - Lazy tracking: users record only major expenses and balance snapshots, then the system shows `untracked money` to reveal spending that was not recorded.
+- Click-first tracking: users tap learned transaction suggestions from their own history so repeated expenses such as `Rokok`, `Bensin`, or `Kopi` can be reviewed and saved without retyping the form.
 
 The system should help users answer:
 
@@ -54,6 +55,7 @@ A family member who can view selected family reports but cannot manage all finan
 - Financial accounts: cash, bank, e-wallet, credit card, loan, investment, saving goal account.
 - Income transactions.
 - Expense transactions.
+- Smart click-first transaction suggestions from the user's own history.
 - Saving transactions.
 - Transfers between accounts.
 - Categories.
@@ -266,6 +268,11 @@ Acceptance criteria:
 - Transaction create/update/delete must recalculate affected balances correctly.
 - Insufficient balance must reject expense or saving movements that require cash.
 - Website-created and WhatsApp-created transactions must use the same backend services.
+- The website/PWA transaction page provides a Quick Add flow with type buttons, frequent title suggestions, learned amount presets, and a compact review-before-save panel.
+- Tapping a suggestion must prefill merchant/title, category, account, amount, need type, and today's date, but it must not save until the user taps `Simpan Transaksi`.
+- Suggestions must be derived from the authenticated user's own transaction history only.
+- Suggestions must skip deleted transactions, inactive or deleted accounts, missing or deleted categories, category/type mismatches, inaccessible accounts, and inactive saving goals.
+- The existing full transaction form remains available as a fallback for manual details.
 
 ### 6.6 Transfers
 
@@ -958,6 +965,7 @@ Rules:
 - `/accounts`.
 - `/categories`.
 - `/transactions`.
+- `GET /transactions` includes smart transaction suggestions as an Inertia prop.
 - `/transfers`.
 - `/budgets`.
 - `/saving-goals`.
@@ -1020,6 +1028,7 @@ Jobs/Commands:
 ### Required Core Services
 
 - `TransactionService`.
+- `TransactionSuggestionService`.
 - `AccountBalanceService`.
 - `TransferService`.
 - `DebtPaymentService`.
@@ -1068,6 +1077,8 @@ Rules:
 - Visibility must be valid.
 - Need type must be valid.
 - Merchant/title is required for normal transaction input.
+- Quick Add suggestions are read-only presets and must still submit through the normal transaction validation and `TransactionService`.
+- Quick Add must not trust client-provided suggestion IDs for authorization or money movement.
 
 ### WhatsApp Input Validation
 
@@ -1123,6 +1134,10 @@ Rules:
 - Transaction service updates balances.
 - Expense cannot make account balance negative.
 - Transaction update/delete recalculates balances.
+- Transaction suggestions use only the authenticated user's own history.
+- Transaction suggestions choose the most frequent merchant/title details, category, account, need type, and amount.
+- Transaction suggestions exclude deleted, inactive, mismatched, and inaccessible records.
+- `/transactions` includes suggestion props without leaking another user's merchants.
 - Transfer moves balances correctly.
 - Debt payment creates expense and reduces outstanding debt.
 - Monthly report totals are correct.
@@ -1163,6 +1178,7 @@ Rules:
 - Categories.
 - Income.
 - Expense.
+- Smart click-first Quick Add transaction entry.
 - Saving transactions.
 - Transfers.
 - Balance updates.
@@ -1263,6 +1279,7 @@ Rules:
 ## 15. Success Metrics
 
 - Users record at least major expenses consistently.
+- Users can save repeated transactions with taps and minimal typing.
 - Users understand monthly cash flow without recording every small transaction.
 - WhatsApp input reduces friction compared to website-only input.
 - Dashboard and reports show accurate recorded data.

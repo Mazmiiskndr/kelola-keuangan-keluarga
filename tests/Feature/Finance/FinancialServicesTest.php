@@ -257,6 +257,117 @@ class FinancialServicesTest extends TestCase
         );
     }
 
+    public function test_transaction_suggestions_use_only_authenticated_users_own_history(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $account = $this->account($user, 1000000);
+        $otherAccount = $this->account($otherUser, 1000000);
+        $category = $this->category($user, 'expense', 'Lifestyle');
+        $otherCategory = $this->category($otherUser, 'expense', 'Rahasia');
+
+        $this->transaction($user, $account, $category, ['merchant' => 'Rokok', 'amount' => 25000]);
+        $this->transaction($otherUser, $otherAccount, $otherCategory, ['merchant' => 'Data Orang Lain', 'amount' => 90000]);
+
+        $this->actingAs($user)->get('/transactions')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/index')
+                ->has('suggestions.items', 1)
+                ->where('suggestions.items.0.merchant', 'Rokok')
+                ->where('suggestions.items.0.usage_count', 1)
+            );
+    }
+
+    public function test_transaction_suggestions_pick_most_frequent_title_details_and_amount(): void
+    {
+        $user = User::factory()->create();
+        $cashAccount = $this->account($user, 1000000, ['name' => 'Cash']);
+        $walletAccount = $this->account($user, 1000000, ['name' => 'E-Wallet', 'bank_name' => null, 'account_holder_name' => null]);
+        $foodCategory = $this->category($user, 'expense', 'Makan');
+        $lifestyleCategory = $this->category($user, 'expense', 'Lifestyle');
+
+        $this->transaction($user, $cashAccount, $foodCategory, [
+            'merchant' => 'Rokok',
+            'amount' => 25000,
+            'need_type' => 'lifestyle',
+            'transaction_date' => now()->subDays(3)->toDateString(),
+        ]);
+        $this->transaction($user, $walletAccount, $lifestyleCategory, [
+            'merchant' => 'rokok',
+            'amount' => 30000,
+            'need_type' => 'lifestyle',
+            'transaction_date' => now()->subDays(2)->toDateString(),
+        ]);
+        $this->transaction($user, $walletAccount, $lifestyleCategory, [
+            'merchant' => 'Rokok',
+            'amount' => 30000,
+            'need_type' => 'flexible',
+            'transaction_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $this->actingAs($user)->get('/transactions')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/index')
+                ->where('suggestions.items.0.type', 'expense')
+                ->where('suggestions.items.0.merchant', 'Rokok')
+                ->where('suggestions.items.0.category_id', $lifestyleCategory->id)
+                ->where('suggestions.items.0.financial_account_id', $walletAccount->id)
+                ->where('suggestions.items.0.amount', 30000)
+                ->where('suggestions.items.0.need_type', 'lifestyle')
+                ->where('suggestions.items.0.usage_count', 3)
+            );
+    }
+
+    public function test_transaction_suggestions_exclude_inactive_deleted_mismatched_and_inaccessible_records(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $activeAccount = $this->account($user, 1000000);
+        $inactiveAccount = $this->account($user, 1000000, ['is_active' => false]);
+        $otherAccount = $this->account($otherUser, 1000000);
+        $expenseCategory = $this->category($user, 'expense', 'Belanja');
+        $incomeCategory = $this->category($user, 'income', 'Gaji');
+        $deletedCategory = $this->category($user, 'expense', 'Dihapus');
+
+        $this->transaction($user, $activeAccount, $expenseCategory, ['merchant' => 'Valid']);
+        $this->transaction($user, $inactiveAccount, $expenseCategory, ['merchant' => 'Akun Nonaktif']);
+        $this->transaction($user, $activeAccount, $incomeCategory, ['merchant' => 'Kategori Salah', 'type' => 'expense']);
+        $this->transaction($user, $activeAccount, $deletedCategory, ['merchant' => 'Kategori Dihapus']);
+        $this->transaction($user, $otherAccount, $expenseCategory, ['merchant' => 'Akun Tidak Bisa Diakses']);
+        $deletedCategory->delete();
+
+        $this->actingAs($user)->get('/transactions')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/index')
+                ->has('suggestions.items', 1)
+                ->where('suggestions.items.0.merchant', 'Valid')
+            );
+    }
+
+    public function test_transactions_page_includes_learned_amount_presets(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 1000000);
+        $category = $this->category($user, 'expense', 'Transportasi');
+
+        $this->transaction($user, $account, $category, ['merchant' => 'Bensin', 'amount' => 50000]);
+        $this->transaction($user, $account, $category, ['merchant' => 'Tol', 'amount' => 50000]);
+        $this->transaction($user, $account, $category, ['merchant' => 'Parkir', 'amount' => 10000]);
+
+        $this->actingAs($user)->get('/transactions')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/index')
+                ->has('suggestions.amount_presets', 2)
+                ->where('suggestions.amount_presets.0.type', 'expense')
+                ->where('suggestions.amount_presets.0.amount', 50000)
+                ->where('suggestions.amount_presets.0.usage_count', 2)
+            );
+    }
+
     public function test_transfer_cannot_make_source_account_balance_negative(): void
     {
         $user = User::factory()->create();
@@ -780,6 +891,25 @@ class FinancialServicesTest extends TestCase
         $this->assertSame('completed', $analysis->status);
         $this->assertNotEmpty($analysis->result_summary);
         $this->assertGreaterThan(0, $analysis->aiRecommendations()->count());
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function transaction(User $user, FinancialAccount $account, Category $category, array $overrides = []): FinanceTransaction
+    {
+        return FinanceTransaction::query()->create([
+            'user_id' => $user->id,
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 10000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'unclassified',
+            'merchant' => 'Transaksi',
+            ...$overrides,
+        ]);
     }
 
     /**

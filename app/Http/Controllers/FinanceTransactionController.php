@@ -11,6 +11,7 @@ use App\Models\FinancialAccount;
 use App\Models\SavingGoal;
 use App\Services\Finance\CategoryBootstrapService;
 use App\Services\Finance\FamilyAccessService;
+use App\Services\Finance\TransactionSuggestionService;
 use App\Services\Finance\TransactionService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class FinanceTransactionController extends Controller
 {
     public function __construct(
         private readonly TransactionService $transactions,
+        private readonly TransactionSuggestionService $suggestions,
         private readonly CategoryBootstrapService $categories,
         private readonly FamilyAccessService $families,
     ) {}
@@ -69,6 +71,7 @@ class FinanceTransactionController extends Controller
                 ->where('status', 'active')
                 ->latest()
                 ->get(),
+            'suggestions' => $this->suggestions->forUser($user),
             'filters' => [
                 'type' => $selectedType,
             ],

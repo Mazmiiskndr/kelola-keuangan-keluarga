@@ -14,9 +14,17 @@ import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
 import { toFormString } from '@/lib/form-values';
 import { type BreadcrumbItem } from '@/types';
-import { type Category, type FinanceTransaction, type FinancialAccount, type Paginated, type SavingGoal } from '@/types/finance';
+import {
+    type Category,
+    type FinanceTransaction,
+    type FinancialAccount,
+    type Paginated,
+    type SavingGoal,
+    type TransactionSuggestion,
+    type TransactionSuggestions,
+} from '@/types/finance';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowRightLeft, Pencil, ReceiptText, Trash2, X } from 'lucide-react';
+import { ArrowRightLeft, CheckCircle2, Pencil, ReceiptText, Sparkles, Trash2, X } from 'lucide-react';
 import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Transaksi', href: '/transactions' }];
@@ -27,19 +35,33 @@ const transactionTypeFilterOptions = [
     { value: 'expense', label: 'Pengeluaran' },
     { value: 'saving', label: 'Tabungan' },
 ];
+const transactionTypeOptions = [
+    { value: 'expense', label: 'Pengeluaran' },
+    { value: 'income', label: 'Pemasukan' },
+    { value: 'saving', label: 'Tabungan' },
+];
 
 interface TransactionsProps {
     transactions: Paginated<FinanceTransaction>;
     accounts: FinancialAccount[];
     categories: Category[];
     savingGoals: SavingGoal[];
+    suggestions: TransactionSuggestions;
     filters: {
         type: string;
     };
 }
 
-export default function TransactionsIndex({ transactions, accounts, categories, savingGoals, filters }: TransactionsProps) {
+export default function TransactionsIndex({
+    transactions,
+    accounts,
+    categories,
+    savingGoals,
+    suggestions = { items: [], amount_presets: [] },
+    filters,
+}: TransactionsProps) {
     const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null);
+    const [quickReviewSuggestionId, setQuickReviewSuggestionId] = useState<string | null>(null);
     const form = useForm({
         financial_account_id: accounts[0]?.id?.toString() ?? '',
         category_id: categories[0]?.id?.toString() ?? '',
@@ -64,6 +86,15 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
 
     const filteredCategories = form.data.type === 'saving' ? [] : categories.filter((category) => category.type === form.data.type);
     const selectedHistoryType = filters.type || 'all';
+    const activeSuggestions = suggestions.items.filter((suggestion) => suggestion.type === form.data.type).slice(0, 8);
+    const learnedAmountPresets = suggestions.amount_presets.filter((preset) => preset.type === form.data.type).slice(0, 5);
+    const amountPresetValues = learnedAmountPresets.length > 0 ? learnedAmountPresets.map((preset) => Number(preset.amount)) : nominalPresets;
+    const quickReviewSuggestion = suggestions.items.find((suggestion) => suggestion.id === quickReviewSuggestionId);
+    const selectedAccountLabel = accountLabel(accounts.find((account) => account.id.toString() === form.data.financial_account_id));
+    const selectedCategoryLabel =
+        form.data.type === 'saving'
+            ? (savingGoals.find((goal) => goal.id.toString() === form.data.saving_goal_id)?.name ?? 'Target tabungan')
+            : (categories.find((category) => category.id.toString() === form.data.category_id)?.name ?? 'Kategori');
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
@@ -89,6 +120,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
 
     function resetTransactionForm() {
         setEditingTransactionId(null);
+        setQuickReviewSuggestionId(null);
         form.clearErrors();
         form.setData({
             financial_account_id: accounts[0]?.id?.toString() ?? '',
@@ -107,6 +139,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
 
     function editTransaction(transaction: FinanceTransaction) {
         setEditingTransactionId(transaction.id);
+        setQuickReviewSuggestionId(null);
         form.clearErrors();
         form.setData({
             financial_account_id: transaction.account?.id?.toString() ?? accounts[0]?.id?.toString() ?? '',
@@ -149,6 +182,41 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
         return transaction.user?.name || transaction.user?.email || 'User';
     }
 
+    function setTransactionType(nextType: string) {
+        const nextCategory = nextType === 'saving' ? undefined : categories.find((category) => category.type === nextType);
+
+        setQuickReviewSuggestionId(null);
+        form.setData((data) => ({
+            ...data,
+            type: nextType,
+            category_id: nextCategory?.id?.toString() ?? '',
+            saving_goal_id: nextType === 'saving' ? (savingGoals[0]?.id?.toString() ?? '') : data.saving_goal_id,
+            need_type: nextType === 'saving' ? 'financial' : data.need_type,
+        }));
+    }
+
+    function applySuggestion(suggestion: TransactionSuggestion) {
+        const selectedAccount = accounts.find((account) => account.id === suggestion.financial_account_id);
+
+        setEditingTransactionId(null);
+        setQuickReviewSuggestionId(suggestion.id);
+        form.clearErrors();
+        form.setData((data) => ({
+            ...data,
+            type: suggestion.type,
+            financial_account_id: suggestion.financial_account_id.toString(),
+            category_id: suggestion.type === 'saving' ? '' : (suggestion.category_id?.toString() ?? ''),
+            saving_goal_id:
+                suggestion.saving_goal_id?.toString() ??
+                (suggestion.type === 'saving' ? (savingGoals[0]?.id?.toString() ?? '') : data.saving_goal_id),
+            amount: toFormString(suggestion.amount),
+            transaction_date: new Date().toISOString().slice(0, 10),
+            merchant: suggestion.merchant,
+            need_type: suggestion.need_type,
+            visibility: selectedAccount?.visibility === 'family' ? 'family' : data.visibility,
+        }));
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs} pageTitle="Transaksi">
             <Head title="Transaksi" />
@@ -179,37 +247,102 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                             </CardHeader>
                             <CardContent>
                                 <form noValidate className="space-y-4" onSubmit={submit}>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-2">
-                                            <RequiredLabel>Tipe</RequiredLabel>
-                                            <FinanceSelect
-                                                value={form.data.type}
-                                                onValueChange={(nextType) => {
-                                                    const nextCategory =
-                                                        nextType === 'saving' ? undefined : categories.find((category) => category.type === nextType);
-                                                    form.setData((data) => ({
-                                                        ...data,
-                                                        type: nextType,
-                                                        category_id: nextCategory?.id?.toString() ?? '',
-                                                        saving_goal_id:
-                                                            nextType === 'saving' ? (savingGoals[0]?.id?.toString() ?? '') : data.saving_goal_id,
-                                                        need_type: nextType === 'saving' ? 'financial' : data.need_type,
-                                                    }));
-                                                }}
-                                                options={[
-                                                    { value: 'expense', label: 'Pengeluaran' },
-                                                    { value: 'income', label: 'Pemasukan' },
-                                                    { value: 'saving', label: 'Tabungan' },
-                                                ]}
-                                            />
+                                    <div className="space-y-2">
+                                        <RequiredLabel>Tipe</RequiredLabel>
+                                        <div className="border-input grid h-12 grid-cols-3 rounded-md border bg-slate-50 p-1 shadow-sm dark:bg-slate-950">
+                                            {transactionTypeOptions.map((typeOption) => (
+                                                <button
+                                                    key={typeOption.value}
+                                                    type="button"
+                                                    className={`rounded-sm px-2 text-sm font-semibold whitespace-nowrap transition-all ${
+                                                        form.data.type === typeOption.value
+                                                            ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                                                            : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
+                                                    }`}
+                                                    onClick={() => setTransactionType(typeOption.value)}
+                                                >
+                                                    {typeOption.label}
+                                                </button>
+                                            ))}
                                         </div>
-                                        <div className="space-y-2">
-                                            <RequiredLabel>Tanggal</RequiredLabel>
-                                            <DatePickerInput
-                                                value={form.data.transaction_date}
-                                                onValueChange={(value) => form.setData('transaction_date', value)}
-                                            />
+                                    </div>
+
+                                    {!editingTransactionId && (
+                                        <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-3 dark:border-blue-900/50 dark:bg-blue-950/20">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
+                                                        <Sparkles className="size-4 text-blue-600" /> Sering dipakai
+                                                    </p>
+                                                    <p className="text-muted-foreground mt-1 text-xs">
+                                                        Pilih dari riwayat pribadi, lalu cek ulang sebelum simpan.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                                {activeSuggestions.length === 0 ? (
+                                                    <p className="text-muted-foreground rounded-md border border-dashed bg-white/70 p-3 text-sm dark:bg-slate-950/70">
+                                                        Belum ada saran untuk tipe ini.
+                                                    </p>
+                                                ) : (
+                                                    activeSuggestions.map((suggestion) => (
+                                                        <button
+                                                            key={suggestion.id}
+                                                            type="button"
+                                                            className={`rounded-md border bg-white p-3 text-left transition-all hover:border-blue-300 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:bg-slate-950 ${
+                                                                quickReviewSuggestionId === suggestion.id
+                                                                    ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-950'
+                                                                    : 'border-slate-200 dark:border-slate-800'
+                                                            }`}
+                                                            onClick={() => applySuggestion(suggestion)}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="min-w-0">
+                                                                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+                                                                        {suggestion.merchant}
+                                                                    </p>
+                                                                    <p className="text-muted-foreground mt-1 truncate text-xs">
+                                                                        {suggestion.category_name ?? suggestion.saving_goal_name ?? 'Tanpa kategori'}{' '}
+                                                                        - {suggestion.account_label ?? 'Akun'}
+                                                                    </p>
+                                                                </div>
+                                                                <span className="shrink-0 text-sm font-bold text-blue-700 dark:text-blue-300">
+                                                                    {formatMoney(suggestion.amount)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-muted-foreground mt-2 text-xs">
+                                                                Dipakai {suggestion.usage_count}x
+                                                                {suggestion.last_used_at ? ` - terakhir ${suggestion.last_used_at}` : ''}
+                                                            </p>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
                                         </div>
+                                    )}
+
+                                    {quickReviewSuggestion && !editingTransactionId && (
+                                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+                                            <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                                <CheckCircle2 className="size-4" /> Review cepat siap disimpan
+                                            </p>
+                                            <div className="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-2 dark:text-slate-200">
+                                                <span>Judul: {form.data.merchant}</span>
+                                                <span>Nominal: {formatMoney(form.data.amount || 0)}</span>
+                                                <span>Akun: {selectedAccountLabel}</span>
+                                                <span>
+                                                    {form.data.type === 'saving' ? 'Target' : 'Kategori'}: {selectedCategoryLabel}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-2">
+                                        <RequiredLabel>Tanggal</RequiredLabel>
+                                        <DatePickerInput
+                                            value={form.data.transaction_date}
+                                            onValueChange={(value) => form.setData('transaction_date', value)}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <RequiredLabel>{form.data.type === 'saving' ? 'Akun sumber' : 'Akun'}</RequiredLabel>
@@ -257,7 +390,7 @@ export default function TransactionsIndex({ transactions, accounts, categories, 
                                         <RequiredLabel>Nominal</RequiredLabel>
                                         <CurrencyInput value={form.data.amount} onValueChange={(value) => form.setData('amount', value)} />
                                         <div className="flex flex-wrap gap-2">
-                                            {nominalPresets.map((amount) => (
+                                            {amountPresetValues.map((amount) => (
                                                 <button
                                                     key={amount}
                                                     type="button"

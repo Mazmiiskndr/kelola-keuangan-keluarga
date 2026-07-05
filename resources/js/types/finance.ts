@@ -71,6 +71,35 @@ export interface FinanceTransaction {
     saving_goal?: SavingGoal;
 }
 
+export interface TransactionSuggestion {
+    id: string;
+    type: 'income' | 'expense' | 'saving';
+    merchant: string;
+    category_id?: number | null;
+    category_name?: string | null;
+    financial_account_id: number;
+    account_label?: string | null;
+    amount: MoneyValue;
+    need_type: string;
+    saving_goal_id?: number | null;
+    saving_goal_name?: string | null;
+    usage_count: number;
+    last_used_at?: string | null;
+}
+
+export interface TransactionAmountPreset {
+    id: string;
+    type: 'income' | 'expense' | 'saving';
+    amount: MoneyValue;
+    usage_count: number;
+    last_used_at?: string | null;
+}
+
+export interface TransactionSuggestions {
+    items: TransactionSuggestion[];
+    amount_presets: TransactionAmountPreset[];
+}
+
 export interface Budget {
     id: number;
     category_id?: number;
