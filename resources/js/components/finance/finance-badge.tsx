@@ -51,10 +51,12 @@ const badgeLabels: Record<string, string> = {
     saving_plan: 'Rencana Tabungan',
     cash_flow: 'Cash Flow',
     savable: 'Bisa Hemat',
-    private: 'Private',
-    family: 'Family',
+    private: '🔒 Private',
+    family: '👨‍👩‍👧 Family',
     shared_goal: 'Shared Goal',
     idr: 'IDR',
+    debt: 'Cicilan',
+    saving: 'Tabungan',
 };
 
 function normalizeBadgeValue(value: string | number | null | undefined): string {

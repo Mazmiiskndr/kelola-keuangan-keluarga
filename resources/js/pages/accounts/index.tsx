@@ -277,7 +277,11 @@ export default function AccountsIndex({ accounts, families }: AccountsProps) {
                                         {account.can_delete !== false && (
                                             <button
                                                 className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                                onClick={() => router.delete(`/accounts/${account.id}`, { preserveScroll: true })}
+                                                onClick={() => {
+                                                    if (window.confirm('Yakin ingin menghapus / mengarsipkan akun ini?')) {
+                                                        router.delete(`/accounts/${account.id}`, { preserveScroll: true });
+                                                    }
+                                                }}
                                                 aria-label="Arsipkan rekening"
                                             >
                                                 <Trash2 className="size-4" />

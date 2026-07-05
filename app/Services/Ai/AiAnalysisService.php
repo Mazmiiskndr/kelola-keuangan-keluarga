@@ -9,16 +9,20 @@ use App\Models\AiRecommendation;
 use App\Models\User;
 use App\Services\Finance\FinancialMetricService;
 use Illuminate\Support\Arr;
+use Laravel\Ai\Ai;
 use Throwable;
 
 class AiAnalysisService
 {
-    public function __construct(private readonly FinancialMetricService $metrics) {}
+    public function __construct(
+        private readonly FinancialMetricService $metrics,
+        private readonly AiProviderCatalog $catalog,
+    ) {}
 
     public function generateMonthly(User $user, ?string $period = null): AiAnalysis
     {
         $snapshot = $this->metrics->monthlySummary($user, $period);
-        $aiResult = $this->generateWithOpenAi($snapshot);
+        $aiResult = $this->generateWithConfiguredProvider($user, $snapshot);
         $recommendations = $aiResult['recommendations'] ?? $this->deterministicRecommendations($snapshot);
 
         $analysis = AiAnalysis::query()->create([
@@ -50,17 +54,26 @@ class AiAnalysisService
         return $analysis->load('aiRecommendations');
     }
 
-    private function generateWithOpenAi(array $snapshot): ?array
+    private function generateWithConfiguredProvider(User $user, array $snapshot): ?array
     {
-        if (blank(config('ai.providers.openai.key'))) {
+        $provider = $user->ai_provider ?: $this->catalog->defaultProvider();
+        $model = $user->ai_model ?: $this->catalog->defaultModelFor($provider);
+
+        if (! $this->catalog->isValidProvider($provider) || ! $this->catalog->isValidModel($provider, $model) || blank($user->ai_api_key)) {
             return null;
         }
+
+        $configKey = "ai.providers.{$provider}.key";
+        $previousKey = config($configKey);
+
+        config([$configKey => $user->ai_api_key]);
+        Ai::forgetInstance($provider);
 
         try {
             $response = (new FinancialAdvisorAgent)->prompt(
                 prompt: 'Analisis metrik keuangan berikut dan berikan output sesuai schema: '.json_encode($snapshot, JSON_THROW_ON_ERROR),
-                provider: 'openai',
-                model: (string) config('ai.finance_analysis_model', 'gpt-4.1-mini'),
+                provider: $provider,
+                model: $model,
                 timeout: 60,
             );
 
@@ -84,12 +97,15 @@ class AiAnalysisService
             return [
                 'summary' => filled($payload['summary'] ?? null) ? (string) $payload['summary'] : null,
                 'recommendations' => $recommendations ?: null,
-                'model' => (string) config('ai.finance_analysis_model', 'gpt-4.1-mini'),
+                'model' => "{$provider}:{$model}",
             ];
         } catch (Throwable $exception) {
             report($exception);
 
             return null;
+        } finally {
+            config([$configKey => $previousKey]);
+            Ai::forgetInstance($provider);
         }
     }
 
@@ -123,7 +139,7 @@ class AiAnalysisService
         if ($largestCategory) {
             $savingAmount = round(((float) $largestCategory['amount']) * 0.15);
             $recommendations[] = [
-                'type' => 'saving',
+                'type' => 'savable',
                 'title' => 'Tekan pengeluaran '.$largestCategory['name'],
                 'description' => 'Kategori ini menjadi pengeluaran terbesar bulan ini. Target hemat realistis sekitar 15% tanpa mengganggu kebutuhan utama.',
                 'estimated_saving_amount' => $savingAmount,

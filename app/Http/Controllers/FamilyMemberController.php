@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Finance\FamilyAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class FamilyMemberController extends Controller
 {
@@ -19,6 +20,7 @@ class FamilyMemberController extends Controller
         abort_unless($this->families->canManage($request->user(), $family->load('members')), 403);
 
         $memberUser = User::query()->where('email', $request->validated('email'))->firstOrFail();
+        $this->ensureMemberCanBeAdded($family, $memberUser);
 
         FamilyMember::query()->updateOrCreate(
             [
@@ -33,6 +35,21 @@ class FamilyMemberController extends Controller
         );
 
         return back()->with('success', 'Anggota keluarga berhasil ditambahkan.');
+    }
+
+    private function ensureMemberCanBeAdded(Family $family, User $memberUser): void
+    {
+        if ($family->owner_user_id === $memberUser->id) {
+            throw ValidationException::withMessages([
+                'email' => 'Email ini adalah owner keluarga dan tidak perlu ditambahkan lagi.',
+            ]);
+        }
+
+        if ($family->members->contains('user_id', $memberUser->id)) {
+            throw ValidationException::withMessages([
+                'email' => 'Email ini sudah terdaftar sebagai anggota keluarga.',
+            ]);
+        }
     }
 
     public function destroy(Request $request, Family $family, FamilyMember $member): RedirectResponse

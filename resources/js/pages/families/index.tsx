@@ -60,7 +60,7 @@ function FamilyMemberForm({ family }: FamilyMemberFormProps) {
             </div>
             <div className="space-y-2 pb-6">
                 <Label className="invisible">Aksi</Label>
-                <Button type="submit" disabled={form.processing} className="h-10 w-full">
+                <Button type="submit" disabled={form.processing} className="h-12 w-full">
                     {form.processing ? (
                         'Menyimpan...'
                     ) : (

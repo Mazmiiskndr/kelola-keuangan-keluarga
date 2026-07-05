@@ -152,6 +152,11 @@
         @apply border-border;
     }
 
+    input[data-password-toggle]::-ms-reveal,
+    input[data-password-toggle]::-ms-clear {
+        display: none;
+    }
+
     body {
         @apply bg-background text-foreground;
     }

@@ -367,7 +367,11 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                             </button>
                                             <button
                                                 className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                                onClick={() => router.delete(`/debts/${debt.id}`, { preserveScroll: true })}
+                                                onClick={() => {
+                                                    if (window.confirm('Yakin ingin mengarsipkan hutang ini?')) {
+                                                        router.delete(`/debts/${debt.id}`, { preserveScroll: true });
+                                                    }
+                                                }}
                                                 aria-label="Arsipkan hutang"
                                             >
                                                 <Trash2 className="size-4" />
@@ -379,7 +383,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                             label="Sisa hutang"
                                             value={debt.outstanding_amount}
                                             target={debt.principal_amount}
-                                            tone="amber"
+                                            semantic="budget"
                                         />
                                         <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900">
                                             <p className="text-muted-foreground text-sm">Cicilan bulanan</p>

@@ -3,6 +3,8 @@ import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { type BreadcrumbItem } from '@/types';
+import { Plus } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 
 export default function AppSidebarLayout({
     children,
@@ -19,7 +21,16 @@ export default function AppSidebarLayout({
             <AppContent variant="sidebar">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} pageTitle={pageTitle} />
                 {children}
-                <footer className="text-muted-foreground px-4 pb-6 text-center text-xs font-medium md:px-6">2026 Created by Mazmiiskndr</footer>
+                <footer className="text-muted-foreground px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center text-xs font-medium md:px-6">2026 Created by Mazmiiskndr</footer>
+                <div className="fixed right-4 bottom-[calc(24px+env(safe-area-inset-bottom))] z-50 md:hidden">
+                    <Link
+                        href="/transactions"
+                        className="flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 dark:bg-blue-700"
+                        aria-label="Tambah Transaksi"
+                    >
+                        <Plus className="size-6" />
+                    </Link>
+                </div>
             </AppContent>
         </AppShell>
     );

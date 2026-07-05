@@ -80,6 +80,9 @@ class AccountBalanceService
         $this->recalculateCurrentBalance(
             FinancialAccount::query()->findOrFail($data['from_account_id'])
         );
+        $this->recalculateCurrentBalance(
+            FinancialAccount::query()->findOrFail($data['to_account_id'])
+        );
     }
 
     public function recalculateCurrentBalance(FinancialAccount $account): FinancialAccount

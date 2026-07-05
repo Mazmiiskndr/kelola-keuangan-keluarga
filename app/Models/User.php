@@ -26,6 +26,9 @@ class User extends Authenticatable
         'whatsapp_number',
         'whatsapp_lid',
         'password',
+        'ai_provider',
+        'ai_model',
+        'ai_api_key',
     ];
 
     /**
@@ -36,6 +39,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'ai_api_key',
     ];
 
     /**
@@ -48,6 +52,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'ai_api_key' => 'encrypted',
         ];
     }
 

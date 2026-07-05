@@ -22,10 +22,7 @@ Jawab dalam Bahasa Indonesia.
 PROMPT;
     }
 
-    public function model(): string
-    {
-        return (string) config('ai.finance_analysis_model', 'gpt-4.1-mini');
-    }
+
 
     public function schema(JsonSchema $schema): array
     {

@@ -867,6 +867,40 @@ class FinancialServicesTest extends TestCase
         ]);
     }
 
+    public function test_family_admin_cannot_add_owner_email_as_member(): void
+    {
+        $admin = User::factory()->create(['email' => 'owner@example.com']);
+        $family = $this->family($admin);
+
+        $response = $this->actingAs($admin)->post("/families/{$family->id}/members", [
+            'email' => $admin->email,
+            'role' => 'member',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertSame(1, FamilyMember::query()->where('family_id', $family->id)->where('user_id', $admin->id)->count());
+    }
+
+    public function test_family_admin_cannot_add_existing_family_member_email(): void
+    {
+        $admin = User::factory()->create();
+        $member = User::factory()->create(['email' => 'member@example.com']);
+        $family = $this->family($admin);
+        $this->familyMember($family, $member, 'member');
+
+        $response = $this->actingAs($admin)->post("/families/{$family->id}/members", [
+            'email' => $member->email,
+            'role' => 'admin',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertDatabaseHas('family_members', [
+            'family_id' => $family->id,
+            'user_id' => $member->id,
+            'role' => 'member',
+        ]);
+    }
+
     public function test_ai_analysis_service_falls_back_without_openai_key(): void
     {
         config(['ai.providers.openai.key' => null]);

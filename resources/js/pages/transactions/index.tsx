@@ -23,8 +23,8 @@ import {
     type TransactionSuggestion,
     type TransactionSuggestions,
 } from '@/types/finance';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowRightLeft, CheckCircle2, Pencil, ReceiptText, Sparkles, Trash2, X } from 'lucide-react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { ArrowRightLeft, CheckCircle2, ChevronLeft, ChevronRight, MoreHorizontal, Pencil, ReceiptText, Sparkles, Trash2, X } from 'lucide-react';
 import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Transaksi', href: '/transactions' }];
@@ -60,6 +60,17 @@ export default function TransactionsIndex({
     suggestions = { items: [], amount_presets: [] },
     filters,
 }: TransactionsProps) {
+    const getDefaultDate = () => {
+        const now = new Date();
+        if (now.getHours() >= 0 && now.getHours() < 4) {
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            return yesterday.toISOString().slice(0, 10);
+        }
+        return now.toISOString().slice(0, 10);
+    };
+
+    const { auth } = usePage().props;
     const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null);
     const [quickReviewSuggestionId, setQuickReviewSuggestionId] = useState<string | null>(null);
     const form = useForm({
@@ -68,7 +79,7 @@ export default function TransactionsIndex({
         saving_goal_id: savingGoals[0]?.id?.toString() ?? '',
         type: 'expense',
         amount: '',
-        transaction_date: new Date().toISOString().slice(0, 10),
+        transaction_date: getDefaultDate(),
         description: '',
         merchant: '',
         tags: '',
@@ -128,7 +139,7 @@ export default function TransactionsIndex({
             saving_goal_id: savingGoals[0]?.id?.toString() ?? '',
             type: 'expense',
             amount: '',
-            transaction_date: new Date().toISOString().slice(0, 10),
+            transaction_date: getDefaultDate(),
             description: '',
             merchant: '',
             tags: '',
@@ -179,7 +190,40 @@ export default function TransactionsIndex({
     }
 
     function transactionCreator(transaction: FinanceTransaction) {
-        return transaction.user?.name || transaction.user?.email || 'User';
+        const name = transaction.user?.name || transaction.user?.email || 'User';
+        return transaction.user?.id === auth.user.id ? `${name} (Anda)` : name;
+    }
+
+    function paginationContent(label: string) {
+        const normalizedLabel = label.toLowerCase();
+
+        if (normalizedLabel.includes('previous') || normalizedLabel.includes('pagination.previous')) {
+            return <ChevronLeft className="size-4" />;
+        }
+
+        if (normalizedLabel.includes('next') || normalizedLabel.includes('pagination.next')) {
+            return <ChevronRight className="size-4" />;
+        }
+
+        if (label.includes('...')) {
+            return <MoreHorizontal className="size-4" />;
+        }
+
+        return <span>{label}</span>;
+    }
+
+    function paginationAriaLabel(label: string) {
+        const normalizedLabel = label.toLowerCase();
+
+        if (normalizedLabel.includes('previous') || normalizedLabel.includes('pagination.previous')) {
+            return 'Halaman sebelumnya';
+        }
+
+        if (normalizedLabel.includes('next') || normalizedLabel.includes('pagination.next')) {
+            return 'Halaman berikutnya';
+        }
+
+        return label.includes('...') ? 'Halaman lainnya' : `Halaman ${label}`;
     }
 
     function setTransactionType(nextType: string) {
@@ -210,7 +254,7 @@ export default function TransactionsIndex({
                 suggestion.saving_goal_id?.toString() ??
                 (suggestion.type === 'saving' ? (savingGoals[0]?.id?.toString() ?? '') : data.saving_goal_id),
             amount: toFormString(suggestion.amount),
-            transaction_date: new Date().toISOString().slice(0, 10),
+            transaction_date: data.transaction_date, // Preserve user-selected date
             merchant: suggestion.merchant,
             need_type: suggestion.need_type,
             visibility: selectedAccount?.visibility === 'family' ? 'family' : data.visibility,
@@ -323,9 +367,18 @@ export default function TransactionsIndex({
 
                                     {quickReviewSuggestion && !editingTransactionId && (
                                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-                                            <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                                                <CheckCircle2 className="size-4" /> Review cepat siap disimpan
-                                            </p>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                                    <CheckCircle2 className="size-4" /> Review cepat siap disimpan
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={submit}
+                                                    className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none dark:bg-emerald-700 dark:hover:bg-emerald-600"
+                                                >
+                                                    Simpan Langsung
+                                                </button>
+                                            </div>
                                             <div className="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-2 dark:text-slate-200">
                                                 <span>Judul: {form.data.merchant}</span>
                                                 <span>Nominal: {formatMoney(form.data.amount || 0)}</span>
@@ -503,7 +556,7 @@ export default function TransactionsIndex({
                         </Card>
                     </div>
 
-                    <Card>
+                    <Card className="h-fit self-start">
                         <CardHeader>
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <CardTitle>Riwayat Transaksi</CardTitle>
@@ -568,7 +621,11 @@ export default function TransactionsIndex({
                                         {transaction.can_delete !== false && (
                                             <button
                                                 className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                                onClick={() => router.delete(`/transactions/${transaction.id}`, { preserveScroll: true })}
+                                                onClick={() => {
+                                                    if (window.confirm('Yakin ingin menghapus transaksi ini?')) {
+                                                        router.delete(`/transactions/${transaction.id}`, { preserveScroll: true });
+                                                    }
+                                                }}
                                                 aria-label="Hapus transaksi"
                                             >
                                                 <Trash2 className="size-4" />
@@ -577,17 +634,38 @@ export default function TransactionsIndex({
                                     </div>
                                 </div>
                             ))}
-                            {transactions.links && (
+                            {transactions.links && transactions.links.length > 3 && (
                                 <div className="flex flex-wrap gap-2 pt-2">
-                                    {transactions.links.map((link, index) => (
-                                        <Link
-                                            key={`${link.label}-${index}`}
-                                            href={link.url || '#'}
-                                            className={`rounded-md border px-3 py-1 text-sm ${link.active ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950' : 'text-muted-foreground'}`}
-                                            preserveScroll
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
+                                    {transactions.links.map((link, index) => {
+                                        const isDisabled = !link.url;
+                                        const itemClassName = `inline-flex size-10 items-center justify-center rounded-md border text-sm font-semibold transition-colors ${
+                                            link.active
+                                                ? 'border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-slate-950'
+                                                : isDisabled
+                                                  ? 'cursor-not-allowed border-slate-200 text-slate-300 dark:border-slate-800 dark:text-slate-700'
+                                                  : 'text-muted-foreground hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:border-blue-900 dark:hover:bg-blue-950 dark:hover:text-blue-300'
+                                        }`;
+
+                                        return isDisabled ? (
+                                            <span
+                                                key={`${link.label}-${index}`}
+                                                className={itemClassName}
+                                                aria-label={paginationAriaLabel(link.label)}
+                                            >
+                                                {paginationContent(link.label)}
+                                            </span>
+                                        ) : (
+                                            <Link
+                                                key={`${link.label}-${index}`}
+                                                href={link.url}
+                                                className={itemClassName}
+                                                preserveScroll
+                                                aria-label={paginationAriaLabel(link.label)}
+                                            >
+                                                {paginationContent(link.label)}
+                                            </Link>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </CardContent>

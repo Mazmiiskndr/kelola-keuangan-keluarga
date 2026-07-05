@@ -7,6 +7,7 @@ interface ProgressRowProps {
     value: MoneyValue;
     target: MoneyValue;
     tone?: 'blue' | 'green' | 'amber' | 'red';
+    semantic?: 'budget' | 'saving';
 }
 
 const bars = {
@@ -16,10 +17,21 @@ const bars = {
     red: 'bg-rose-600',
 };
 
-export function ProgressRow({ label, value, target, tone = 'blue' }: ProgressRowProps) {
+export function ProgressRow({ label, value, target, tone = 'blue', semantic }: ProgressRowProps) {
     const numericValue = Number(value ?? 0);
     const numericTarget = Number(target ?? 0);
     const percentage = numericTarget > 0 ? Math.min(100, Math.round((numericValue / numericTarget) * 100)) : 0;
+
+    let finalTone = tone;
+    if (semantic === 'budget') {
+        if (percentage < 70) finalTone = 'green';
+        else if (percentage < 90) finalTone = 'amber';
+        else finalTone = 'red';
+    } else if (semantic === 'saving') {
+        if (percentage < 30) finalTone = 'red';
+        else if (percentage < 70) finalTone = 'amber';
+        else finalTone = 'green';
+    }
 
     return (
         <div className="space-y-2">
@@ -30,7 +42,7 @@ export function ProgressRow({ label, value, target, tone = 'blue' }: ProgressRow
                 </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div className={cn('h-full rounded-full', bars[tone])} style={{ width: `${percentage}%` }} />
+                <div className={cn('h-full rounded-full', bars[finalTone])} style={{ width: `${percentage}%` }} />
             </div>
         </div>
     );

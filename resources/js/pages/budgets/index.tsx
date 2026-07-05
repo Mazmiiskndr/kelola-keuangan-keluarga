@@ -153,7 +153,11 @@ export default function BudgetsIndex({ budgets, categories }: BudgetsProps) {
                                         </button>
                                         <button
                                             className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                            onClick={() => router.delete(`/budgets/${budget.id}`, { preserveScroll: true })}
+                                            onClick={() => {
+                                                if (window.confirm('Yakin ingin menghapus budget ini?')) {
+                                                    router.delete(`/budgets/${budget.id}`, { preserveScroll: true });
+                                                }
+                                            }}
                                             aria-label="Hapus budget"
                                         >
                                             <Trash2 className="size-4" />

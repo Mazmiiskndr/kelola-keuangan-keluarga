@@ -294,9 +294,9 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                                 label="Target tabungan"
                                 value={summary.totals.saving_current}
                                 target={summary.totals.saving_target}
-                                tone="green"
+                                semantic="saving"
                             />
-                            <ProgressRow label="Budget terpakai" value={summary.totals.expense} target={summary.totals.budget} tone="amber" />
+                            <ProgressRow label="Budget terpakai" value={summary.totals.expense} target={summary.totals.budget} semantic="budget" />
                             <div className="rounded-lg border bg-slate-50 p-4 dark:bg-slate-900">
                                 <p className="text-sm font-bold text-emerald-600">
                                     Cash flow <MoneyDisplay value={summary.totals.cash_flow} />
@@ -362,7 +362,7 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {summary.expense_by_category.slice(0, 5).map((item) => (
-                                <ProgressRow key={item.name} label={item.name} value={item.amount} target={summary.totals.expense || 1} tone="red" />
+                                <ProgressRow key={item.name} label={item.name} value={item.amount} target={summary.totals.expense || 1} semantic="budget" />
                             ))}
                             {summary.expense_by_category.length === 0 && (
                                 <p className="text-muted-foreground text-sm">AI akan lebih akurat setelah transaksi bulanan tersedia.</p>

@@ -4,12 +4,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { type BreadcrumbItem as BreadcrumbItemType, type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
-import { ChevronDown, Command, HelpCircle, Search, X } from 'lucide-react';
+import { ChevronDown, Command, Search, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 export function AppSidebarHeader({ breadcrumbs = [], pageTitle }: { breadcrumbs?: BreadcrumbItemType[]; pageTitle?: string }) {
@@ -45,12 +45,12 @@ export function AppSidebarHeader({ breadcrumbs = [], pageTitle }: { breadcrumbs?
                         placeholder="Cari transaksi, kategori, atau akun..."
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        className="h-10 w-full rounded-full border border-slate-200 bg-white pr-32 pl-11 text-sm text-slate-700 shadow-sm transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-blue-950"
+                        className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-32 pl-11 text-sm text-slate-700 shadow-sm transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-blue-950"
                     />
                     {searchQuery && (
                         <button
                             type="button"
-                            className="absolute top-1/2 right-[5.35rem] flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                            className="absolute top-1/2 right-[4.2rem] flex size-7 -translate-y-1/2 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-200"
                             onClick={() => {
                                 setSearchQuery('');
                                 searchInputRef.current?.focus();
@@ -60,7 +60,7 @@ export function AppSidebarHeader({ breadcrumbs = [], pageTitle }: { breadcrumbs?
                             <X className="size-4" />
                         </button>
                     )}
-                    <span className="pointer-events-none absolute top-1/2 right-5 inline-flex h-7 -translate-y-1/2 items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                    <span className="pointer-events-none absolute top-1/2 right-2 inline-flex h-7 -translate-y-1/2 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                         <Command className="size-3.5" />K
                     </span>
                 </div>
@@ -68,16 +68,9 @@ export function AppSidebarHeader({ breadcrumbs = [], pageTitle }: { breadcrumbs?
             </div>
             <TooltipProvider delayDuration={0}>
                 <ThemeModeSwitch />
-                <NotificationDropdown />
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button type="button" variant="outline" size="icon" className="size-10 rounded-xl bg-white shadow-none dark:bg-slate-950">
-                            <HelpCircle className="size-5" />
-                            <span className="sr-only">Bantuan</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Bantuan</TooltipContent>
-                </Tooltip>
+                <Button type="button" variant="outline" size="icon" className="size-10 rounded-lg bg-white shadow-none dark:bg-slate-950">
+                    <NotificationDropdown />
+                </Button>
             </TooltipProvider>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>

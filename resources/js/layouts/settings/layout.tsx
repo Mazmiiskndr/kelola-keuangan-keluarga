@@ -21,6 +21,11 @@ const sidebarNavItems: NavItem[] = [
         url: '/settings/appearance',
         icon: null,
     },
+    {
+        title: 'AI Insight',
+        url: '/settings/ai',
+        icon: null,
+    },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
@@ -31,7 +36,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             <Heading title="Pengaturan" description="Preferensi profil, keamanan, notifikasi, dan tampilan." />
 
             <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-                <aside className="app-surface rounded-lg p-3">
+                <aside className="app-surface h-fit self-start rounded-lg p-3">
                     <nav className="flex flex-col gap-1">
                         {sidebarNavItems.map((item) => (
                             <Button

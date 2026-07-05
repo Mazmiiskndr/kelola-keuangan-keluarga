@@ -193,14 +193,18 @@ export default function SavingGoalsIndex({ savingGoals, accounts }: SavingGoalsP
                                             </button>
                                             <button
                                                 className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                                onClick={() => router.delete(`/saving-goals/${goal.id}`, { preserveScroll: true })}
+                                                onClick={() => {
+                                                    if (window.confirm('Yakin ingin menghapus target tabungan ini?')) {
+                                                        router.delete(`/saving-goals/${goal.id}`, { preserveScroll: true });
+                                                    }
+                                                }}
                                                 aria-label="Hapus target"
                                             >
                                                 <Trash2 className="size-4" />
                                             </button>
                                         </div>
                                     </div>
-                                    <ProgressRow label="Terkumpul" value={goal.current_amount} target={goal.target_amount} tone="green" />
+                                    <ProgressRow label="Terkumpul" value={goal.current_amount} target={goal.target_amount} semantic="saving" />
                                     <p className="text-muted-foreground mt-3 text-sm">
                                         Sisa target <MoneyDisplay value={Number(goal.target_amount) - Number(goal.current_amount)} />
                                     </p>

@@ -37,7 +37,7 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
                     icon={Bot}
                 />
                 <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
-                    <Card className="rounded-lg">
+                    <Card className="h-fit self-start rounded-lg">
                         <CardHeader>
                             <CardTitle>Generate Analisis</CardTitle>
                         </CardHeader>
@@ -49,8 +49,8 @@ export default function AiInsightsIndex({ analyses }: AiInsightsProps) {
                                     <FormError message={form.errors.period} />
                                 </div>
                                 <SubmitButton processing={form.processing}>Analisis dengan AI</SubmitButton>
-                                <p className="text-muted-foreground text-xs">
-                                    OpenAI API key disimpan di server Laravel. Browser tidak pernah menerima secret.
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    Kunci AI Anda dijamin aman. Kami melindunginya dengan sistem enkripsi sehingga privasi data finansial Anda selalu terjaga.
                                 </p>
                             </form>
                         </CardContent>
