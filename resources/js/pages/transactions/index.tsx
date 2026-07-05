@@ -86,7 +86,7 @@ export default function TransactionsIndex({
 
     const filteredCategories = form.data.type === 'saving' ? [] : categories.filter((category) => category.type === form.data.type);
     const selectedHistoryType = filters.type || 'all';
-    const activeSuggestions = suggestions.items.filter((suggestion) => suggestion.type === form.data.type).slice(0, 8);
+    const activeSuggestions = suggestions.items.filter((suggestion) => suggestion.type === form.data.type).slice(0, 6);
     const learnedAmountPresets = suggestions.amount_presets.filter((preset) => preset.type === form.data.type).slice(0, 5);
     const amountPresetValues = learnedAmountPresets.length > 0 ? learnedAmountPresets.map((preset) => Number(preset.amount)) : nominalPresets;
     const quickReviewSuggestion = suggestions.items.find((suggestion) => suggestion.id === quickReviewSuggestionId);

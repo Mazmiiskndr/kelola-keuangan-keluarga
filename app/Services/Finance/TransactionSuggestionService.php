@@ -12,7 +12,7 @@ class TransactionSuggestionService
 {
     private const HISTORY_LIMIT = 300;
 
-    private const TITLE_LIMIT = 8;
+    private const TITLE_LIMIT = 6;
 
     private const AMOUNT_LIMIT = 5;
 
