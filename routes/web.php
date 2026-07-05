@@ -11,6 +11,7 @@ use App\Http\Controllers\FinanceTransactionController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SavingGoalController;
 use App\Http\Controllers\TransferController;
 use Illuminate\Http\Request;
@@ -31,6 +32,9 @@ Route::get('/', function (Request $request) {
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::post('dashboard/scope', [DashboardController::class, 'scope'])->name('dashboard.scope');
+
+    Route::get('search', [SearchController::class, 'index'])->name('search');
+    Route::get('search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
 
     Route::resource('accounts', FinancialAccountController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('categories', CategoryController::class)->only(['index', 'store', 'update', 'destroy']);

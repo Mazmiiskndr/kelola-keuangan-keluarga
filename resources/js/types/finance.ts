@@ -238,3 +238,24 @@ export interface SummaryMetric {
     upcoming_debts: Array<{ id: number; name: string; lender?: string; amount: number; due_date?: string }>;
     member_breakdown?: MemberBreakdown[];
 }
+
+export type SearchResultType = 'transaction' | 'account' | 'category' | 'budget' | 'saving_goal' | 'debt' | 'family';
+
+export interface SearchResult {
+    id: number;
+    type: SearchResultType;
+    title: string;
+    subtitle: string | null;
+    description: string | null;
+    badge: string | null;
+    amount: number | null;
+    date: string | null;
+    href: string;
+    detail_key: string;
+}
+
+export interface SearchResultGroup {
+    type: SearchResultType;
+    label: string;
+    results: SearchResult[];
+}

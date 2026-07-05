@@ -16,7 +16,7 @@ export function ThemeModeSwitch({ className }: ThemeModeSwitchProps) {
             type="button"
             variant="outline"
             className={cn(
-                'group h-10 rounded-xl border-slate-200 bg-white px-2 shadow-none transition-colors hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-blue-900 dark:hover:bg-blue-950',
+                'group h-10 cursor-pointer rounded-xl border-slate-200 bg-white px-2 shadow-none transition-colors hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-blue-900 dark:hover:bg-blue-950',
                 className,
             )}
             onClick={() => updateAppearance(isDark ? 'light' : 'dark')}

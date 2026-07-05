@@ -152,6 +152,17 @@
         @apply border-border;
     }
 
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    [role='combobox']:not([aria-disabled='true']),
+    [role='menuitem']:not([data-disabled]),
+    [role='option']:not([data-disabled]),
+    input[type='checkbox']:not(:disabled),
+    input[type='radio']:not(:disabled),
+    summary {
+        cursor: pointer;
+    }
+
     input[data-password-toggle]::-ms-reveal,
     input[data-password-toggle]::-ms-clear {
         display: none;

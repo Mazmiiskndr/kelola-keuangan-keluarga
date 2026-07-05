@@ -7,7 +7,6 @@ import { ProgressRow } from '@/components/finance/progress-row';
 import { QuickMenu } from '@/components/finance/quick-menu';
 import { SimpleBarChart } from '@/components/finance/simple-bar-chart';
 import { StatCard } from '@/components/finance/stat-card';
-import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
@@ -16,7 +15,6 @@ import { type BreadcrumbItem } from '@/types';
 import { type Family, type SummaryMetric } from '@/types/finance';
 import { Head, router } from '@inertiajs/react';
 import { ArrowDownRight, ArrowUpRight, Bot, CreditCard, PiggyBank } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -35,27 +33,6 @@ export default function Dashboard({ summary, families }: DashboardProps) {
     const currentScope = summary.scope ?? 'personal';
     const selectedFamilyId = summary.family?.id ? String(summary.family.id) : families[0]?.id ? String(families[0].id) : '';
     const accounts = summary.accounts ?? [];
-    const installDockRef = useRef<HTMLDivElement>(null);
-    const [isInstallDocked, setIsInstallDocked] = useState(false);
-    const [isInstallPromptVisible, setIsInstallPromptVisible] = useState(false);
-
-    useEffect(() => {
-        const dock = installDockRef.current;
-
-        if (!dock) {
-            return;
-        }
-
-        const observer = new IntersectionObserver(([entry]) => setIsInstallDocked(entry.isIntersecting), {
-            root: null,
-            rootMargin: '0px 0px -24px 0px',
-            threshold: 0.01,
-        });
-
-        observer.observe(dock);
-
-        return () => observer.disconnect();
-    }, []);
 
     function openScope(scope: string) {
         router.post(
@@ -362,24 +339,19 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {summary.expense_by_category.slice(0, 5).map((item) => (
-                                <ProgressRow key={item.name} label={item.name} value={item.amount} target={summary.totals.expense || 1} semantic="budget" />
+                                <ProgressRow
+                                    key={item.name}
+                                    label={item.name}
+                                    value={item.amount}
+                                    target={summary.totals.expense || 1}
+                                    semantic="budget"
+                                />
                             ))}
                             {summary.expense_by_category.length === 0 && (
                                 <p className="text-muted-foreground text-sm">AI akan lebih akurat setelah transaksi bulanan tersedia.</p>
                             )}
                         </CardContent>
                     </Card>
-                </div>
-
-                <div ref={installDockRef} className={isInstallPromptVisible ? 'relative min-h-[116px] md:min-h-[108px]' : 'relative'}>
-                    <PwaInstallBanner
-                        onVisibleChange={setIsInstallPromptVisible}
-                        className={
-                            isInstallDocked
-                                ? 'shadow-2xl'
-                                : 'fixed right-4 bottom-4 left-4 z-50 shadow-2xl md:right-6 md:bottom-6 md:left-[calc(var(--sidebar-width)+1.5rem)]'
-                        }
-                    />
                 </div>
             </div>
         </AppLayout>

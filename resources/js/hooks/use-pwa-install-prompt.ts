@@ -5,7 +5,7 @@ interface BeforeInstallPromptEvent extends Event {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
-const DISMISSED_KEY = 'pwa-install-dismissed-at';
+const DISMISSED_KEY = 'pwa-install-dismissed-at-v2';
 const DISMISS_DAYS = 7;
 
 function isStandaloneDisplay() {
@@ -66,7 +66,7 @@ export function usePwaInstallPrompt() {
         };
     }, []);
 
-    const canShow = useMemo(() => !isInstalled && !dismissed && (Boolean(deferredPrompt) || isIosLike()), [deferredPrompt, dismissed, isInstalled]);
+    const canShow = useMemo(() => !isInstalled && !dismissed, [dismissed, isInstalled]);
 
     const install = useCallback(async () => {
         if (!deferredPrompt) {

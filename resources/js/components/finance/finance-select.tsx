@@ -77,7 +77,7 @@ export function FinanceSelect({
                 variant="outline"
                 aria-expanded={open}
                 role="combobox"
-                className="h-12 w-full justify-between px-4 font-normal"
+                className="h-12 w-full cursor-pointer justify-between px-4 font-normal"
                 onClick={() => setOpen((current) => !current)}
             >
                 <span className={cn('truncate', !selectedOption && 'text-muted-foreground')}>{selectedOption?.label ?? placeholder}</span>
@@ -111,7 +111,7 @@ export function FinanceSelect({
                                     key={`${option.value}-${option.label}`}
                                     type="button"
                                     className={cn(
-                                        'hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm',
+                                        'hover:bg-accent hover:text-accent-foreground flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-left text-sm',
                                         option.value === value && 'bg-accent text-accent-foreground',
                                     )}
                                     onClick={() => selectOption(option.value)}
