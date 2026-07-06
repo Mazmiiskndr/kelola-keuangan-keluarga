@@ -41,6 +41,14 @@ const badgeTones: Record<string, string> = {
     admin: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300',
     member: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300',
     viewer: 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-300',
+    alert: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300',
+    opportunity: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300',
+    habit: 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-300',
+    goal: 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900 dark:bg-teal-950 dark:text-teal-300',
+    next_step: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-300',
+    penting: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300',
+    'bisa dioptimalkan': 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300',
+    rencana: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300',
 };
 
 const badgeLabels: Record<string, string> = {
@@ -57,6 +65,14 @@ const badgeLabels: Record<string, string> = {
     idr: 'IDR',
     debt: 'Cicilan',
     saving: 'Tabungan',
+    alert: 'Masalah',
+    opportunity: 'Peluang',
+    habit: 'Kebiasaan',
+    goal: 'Tujuan',
+    next_step: 'Langkah',
+    penting: '🚨 Penting',
+    'bisa dioptimalkan': '💡 Bisa Dioptimalkan',
+    rencana: '📝 Rencana',
 };
 
 function normalizeBadgeValue(value: string | number | null | undefined): string {

@@ -149,8 +149,12 @@ export interface Debt {
 export interface AiRecommendation {
     id: number;
     type: string;
+    priority?: string;
     title: string;
     description: string;
+    why_it_matters?: string;
+    next_action?: string;
+    source_metric?: string;
     estimated_saving_amount?: MoneyValue;
     confidence_score?: MoneyValue;
     status: string;
@@ -161,6 +165,9 @@ export interface AiAnalysis {
     analysis_type: string;
     period_start: string;
     period_end: string;
+    headline?: string;
+    tone?: string;
+    health_score?: number;
     result_summary?: string;
     recommendations?: AiRecommendation[];
     aiRecommendations?: AiRecommendation[];
