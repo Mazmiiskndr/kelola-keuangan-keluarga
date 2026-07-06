@@ -2,10 +2,6 @@
 
 namespace App\Services\Finance;
 
-use App\Enums\AccountType;
-use App\Enums\DebtStatus;
-use App\Enums\SavingGoalStatus;
-use App\Enums\TransactionType;
 use App\Models\Budget;
 use App\Models\Category;
 use App\Models\Debt;
@@ -269,6 +265,7 @@ class GlobalSearchService
                         return true;
                     }
                 }
+
                 return false;
             })
             ->take($limit)
@@ -303,7 +300,7 @@ class GlobalSearchService
             return '****';
         }
 
-        return '**** ' . substr($number, -4);
+        return '**** '.substr($number, -4);
     }
 
     private function transactionTypeBadge(string $type): string

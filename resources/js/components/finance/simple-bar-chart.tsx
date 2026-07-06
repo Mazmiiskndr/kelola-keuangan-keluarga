@@ -1,139 +1,93 @@
 import { formatMoney } from '@/components/finance/money-display';
-import { useId } from 'react';
 
 interface SimpleBarChartProps {
     data: Array<{ key?: string; label: string; income: number; expense: number }>;
 }
 
-type TrendPoint = {
-    x: number;
-    y: number;
-    label: string;
-    value: number;
-};
-
-const chart = {
-    width: 720,
-    height: 300,
-    top: 22,
-    right: 28,
-    bottom: 54,
-    left: 82,
-};
-
-const plotWidth = chart.width - chart.left - chart.right;
-const plotHeight = chart.height - chart.top - chart.bottom;
-const tickRatios = [1, 0.75, 0.5, 0.25, 0];
+type TrendItem = SimpleBarChartProps['data'][number];
 
 export function SimpleBarChart({ data }: SimpleBarChartProps) {
-    const incomeGradientId = useId();
-    const expenseGradientId = useId();
     const maxValue = Math.max(...data.flatMap((item) => [Number(item.income), Number(item.expense)]), 1);
-    const scaleMax = Math.max(1, Math.ceil(maxValue / 100000) * 100000);
-    const baselineY = chart.top + plotHeight;
-    const incomePoints = toPoints(data, 'income', scaleMax);
-    const expensePoints = toPoints(data, 'expense', scaleMax);
+    const totalIncome = data.reduce((total, item) => total + Number(item.income || 0), 0);
+    const totalExpense = data.reduce((total, item) => total + Number(item.expense || 0), 0);
+    const netCashflow = totalIncome - totalExpense;
 
     return (
-        <div className="w-full">
-            <div className="h-72 w-full overflow-hidden">
-                <svg className="h-full w-full" viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="Tren pemasukan dan pengeluaran">
-                    <defs>
-                        <linearGradient id={incomeGradientId} x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                        </linearGradient>
-                        <linearGradient id={expenseGradientId} x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.18" />
-                            <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
-                        </linearGradient>
-                    </defs>
+        <div className="w-full space-y-3">
+            <div className="grid gap-2 sm:grid-cols-3">
+                <TrendSummary label="Pemasukan" value={totalIncome} tone="income" />
+                <TrendSummary label="Pengeluaran" value={totalExpense} tone="expense" />
+                <TrendSummary label="Cash Flow" value={netCashflow} tone={netCashflow < 0 ? 'expense' : 'income'} />
+            </div>
 
-                    {tickRatios.map((ratio) => {
-                        const y = chart.top + plotHeight * (1 - ratio);
-                        const value = scaleMax * ratio;
+            <div className="overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white px-2 pt-3 pb-2 dark:border-slate-800 dark:from-slate-950 dark:to-slate-900">
+                <div className="relative h-48">
+                    <div className="absolute inset-x-0 top-0 border-t border-dashed border-slate-200 dark:border-slate-800" />
+                    <div className="absolute inset-x-0 top-1/3 border-t border-dashed border-slate-200 dark:border-slate-800" />
+                    <div className="absolute inset-x-0 top-2/3 border-t border-dashed border-slate-200 dark:border-slate-800" />
+                    <div className="absolute inset-x-0 bottom-7 border-t border-slate-200 dark:border-slate-800" />
 
-                        return (
-                            <g key={ratio}>
-                                <line
-                                    x1={chart.left}
-                                    x2={chart.width - chart.right}
-                                    y1={y}
-                                    y2={y}
-                                    className="stroke-slate-200 dark:stroke-slate-800"
-                                    strokeDasharray={ratio === 0 ? undefined : '4 6'}
-                                />
-                                <text x={chart.left - 12} y={y + 4} textAnchor="end" className="fill-slate-500 text-[11px] dark:fill-slate-400">
-                                    {formatMoney(value, true)}
-                                </text>
-                            </g>
-                        );
-                    })}
-
-                    <line x1={chart.left} x2={chart.left} y1={chart.top} y2={baselineY} className="stroke-slate-200 dark:stroke-slate-800" />
-
-                    {data.map((item, index) => (
-                        <text
-                            key={`${item.key ?? item.label}-${index}`}
-                            x={xForIndex(index, data.length)}
-                            y={chart.height - 18}
-                            textAnchor="middle"
-                            className="fill-slate-500 text-[12px] dark:fill-slate-400"
-                        >
-                            {item.label}
-                        </text>
-                    ))}
-
-                    <path d={areaPath(incomePoints, baselineY)} fill={`url(#${incomeGradientId})`} />
-                    <path d={areaPath(expensePoints, baselineY)} fill={`url(#${expenseGradientId})`} />
-                    <path d={linePath(incomePoints)} fill="none" stroke="#10b981" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
-                    <path d={linePath(expensePoints)} fill="none" stroke="#f43f5e" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
-
-                    {incomePoints.map((point, index) => (
-                        <circle key={`income-${point.label}-${index}`} cx={point.x} cy={point.y} r="5" fill="#10b981" stroke="white" strokeWidth="3">
-                            <title>{`Pemasukan ${point.label}: ${formatMoney(point.value)}`}</title>
-                        </circle>
-                    ))}
-                    {expensePoints.map((point, index) => (
-                        <circle key={`expense-${point.label}-${index}`} cx={point.x} cy={point.y} r="5" fill="#f43f5e" stroke="white" strokeWidth="3">
-                            <title>{`Pengeluaran ${point.label}: ${formatMoney(point.value)}`}</title>
-                        </circle>
-                    ))}
-                </svg>
+                    <div
+                        className="relative grid h-full min-w-[520px] gap-2"
+                        style={{ gridTemplateColumns: `repeat(${data.length || 1}, minmax(0, 1fr))` }}
+                    >
+                        {data.map((item, index) => (
+                            <MonthColumn key={`${item.key ?? item.label}-${index}`} item={item} maxValue={maxValue} />
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
-function toPoints(data: SimpleBarChartProps['data'], key: 'income' | 'expense', scaleMax: number): TrendPoint[] {
-    return data.map((item, index) => {
-        const value = Number(item[key] ?? 0);
+function TrendSummary({ label, value, tone }: { label: string; value: number; tone: 'income' | 'expense' }) {
+    const toneClass =
+        tone === 'income'
+            ? 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+            : 'border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300';
 
-        return {
-            x: xForIndex(index, data.length),
-            y: chart.top + plotHeight - (value / scaleMax) * plotHeight,
-            label: item.label,
-            value,
-        };
-    });
+    return (
+        <div className={`rounded-lg border px-3 py-2 ${toneClass}`}>
+            <p className="text-xs font-medium opacity-80">{label}</p>
+            <p className="mt-1 text-sm font-bold">{formatMoney(value, true)}</p>
+        </div>
+    );
 }
 
-function xForIndex(index: number, length: number): number {
-    if (length <= 1) {
-        return chart.left + plotWidth / 2;
-    }
+function MonthColumn({ item, maxValue }: { item: TrendItem; maxValue: number }) {
+    const income = Number(item.income || 0);
+    const expense = Number(item.expense || 0);
+    const cashflow = income - expense;
 
-    return chart.left + (plotWidth / (length - 1)) * index;
+    return (
+        <div className="flex min-w-0 flex-col justify-end gap-2">
+            <div className="flex h-36 items-end justify-center gap-2 rounded-lg px-1">
+                <TrendBar label={`Pemasukan ${item.label}`} value={income} maxValue={maxValue} tone="income" />
+                <TrendBar label={`Pengeluaran ${item.label}`} value={expense} maxValue={maxValue} tone="expense" />
+            </div>
+            <div className="text-center">
+                <p className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{item.label}</p>
+                <p className={`mt-1 text-[11px] font-medium ${cashflow < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{formatMoney(cashflow, true)}</p>
+            </div>
+        </div>
+    );
 }
 
-function linePath(points: TrendPoint[]): string {
-    return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
-}
+function TrendBar({ label, value, maxValue, tone }: { label: string; value: number; maxValue: number; tone: 'income' | 'expense' }) {
+    const height = value > 0 ? Math.max(8, Math.round((value / maxValue) * 100)) : 2;
+    const barClass =
+        tone === 'income'
+            ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-emerald-500/20'
+            : 'bg-gradient-to-t from-rose-600 to-pink-400 shadow-rose-500/20';
 
-function areaPath(points: TrendPoint[], baselineY: number): string {
-    if (points.length === 0) {
-        return '';
-    }
-
-    return `${linePath(points)} L ${points[points.length - 1].x} ${baselineY} L ${points[0].x} ${baselineY} Z`;
+    return (
+        <div className="flex h-full w-5 items-end justify-center rounded-full bg-white/70 dark:bg-slate-950/60">
+            <div className={`w-3 rounded-full shadow-lg transition-all ${barClass}`} style={{ height: `${height}%` }}>
+                <span className="sr-only">
+                    {label}: {formatMoney(value)}
+                </span>
+            </div>
+        </div>
+    );
 }

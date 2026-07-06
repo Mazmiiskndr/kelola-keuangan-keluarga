@@ -249,16 +249,8 @@ export default function Dashboard({ summary, families }: DashboardProps) {
                         <CardHeader>
                             <CardTitle>Tren 6 Bulan</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-3 pt-0 pb-3">
                             <SimpleBarChart data={summary.trend} />
-                            <div className="text-muted-foreground mt-4 flex gap-4 text-xs">
-                                <span className="inline-flex items-center gap-2">
-                                    <span className="size-2 rounded-full bg-emerald-500" /> Pemasukan
-                                </span>
-                                <span className="inline-flex items-center gap-2">
-                                    <span className="size-2 rounded-full bg-rose-500" /> Pengeluaran
-                                </span>
-                            </div>
                         </CardContent>
                     </Card>
 

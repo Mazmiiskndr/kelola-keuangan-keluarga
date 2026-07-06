@@ -172,8 +172,10 @@ export interface AiAnalysis {
     recommendations?: AiRecommendation[];
     aiRecommendations?: AiRecommendation[];
     model_name?: string;
+    model_label?: string;
     status: string;
     created_at: string;
+    input_snapshot?: SummaryMetric;
 }
 
 export interface Family {
@@ -238,7 +240,12 @@ export interface SummaryMetric {
         saving_ratio: number;
         debt_to_income_ratio: number;
     };
-    expense_by_category: Array<{ name: string; amount: number; color: string }>;
+    expense_by_category: Array<{ 
+        name: string; 
+        amount: number; 
+        color: string;
+        top_items?: Array<{ merchant: string; amount: number; is_whatsapp: boolean }>;
+    }>;
     largest_expenses: Array<{ id: number; description?: string; category?: string; member?: string | null; amount: number; date?: string }>;
     accounts?: AccountBalanceBreakdown[];
     trend: Array<{ key?: string; label: string; income: number; expense: number }>;

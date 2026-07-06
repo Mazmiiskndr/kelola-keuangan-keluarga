@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
@@ -180,20 +180,77 @@ export function DatePickerInput({ value, onValueChange, placeholder, className, 
 }
 
 export function MonthPickerInput({ value, onValueChange, placeholder, className, min, max }: MonthPickerInputProps) {
+    const [open, setOpen] = useState(false);
+    const selectedDate = value ? new Date(`${value}-01T00:00:00+07:00`) : new Date();
+    const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
+
+    const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 
+        'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+
+    function selectMonth(monthIndex: number) {
+        const year = viewYear;
+        const month = String(monthIndex + 1).padStart(2, '0');
+        onValueChange(`${year}-${month}`);
+        setOpen(false);
+    }
+
     return (
-        <input
-            type="month"
-            value={value}
-            min={min}
-            max={max}
-            onChange={(event) => onValueChange(event.target.value)}
-            aria-label={placeholder ?? 'Pilih periode'}
-            className={cn(
-                'border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring h-12 w-full rounded-md border px-4 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
-                className,
-            )}
-            title={formatMonth(value, placeholder)}
-        />
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button type="button" variant="outline" className={cn('h-12 w-full justify-between px-4 text-left font-normal', className)}>
+                    <span className={cn('truncate tabular-nums', !value && 'text-muted-foreground')}>{formatMonth(value, placeholder)}</span>
+                    <CalendarDays className="text-muted-foreground size-4" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[276px] p-3" align="start">
+                <div className="flex items-center justify-between mb-4">
+                    <Button variant="outline" size="sm" className="h-7 w-7 p-0 opacity-50 hover:opacity-100" onClick={() => setViewYear(y => y - 1)}>
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="font-medium text-sm">{viewYear}</div>
+                    <Button variant="outline" size="sm" className="h-7 w-7 p-0 opacity-50 hover:opacity-100" onClick={() => setViewYear(y => y + 1)}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    {months.map((m, i) => {
+                        const isSelected = value && parseInt(value.split('-')[1]) === i + 1 && parseInt(value.split('-')[0]) === viewYear;
+                        return (
+                            <Button
+                                key={m}
+                                type="button"
+                                variant={isSelected ? "default" : "outline"}
+                                className={cn("h-9 text-xs", isSelected ? "bg-primary text-primary-foreground font-semibold" : "")}
+                                onClick={() => selectMonth(i)}
+                            >
+                                {m}
+                            </Button>
+                        )
+                    })}
+                </div>
+                <div className="border-t mt-4 pt-3">
+                    <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" size="sm" className="flex-1 text-xs" onClick={() => {
+                            const now = new Date();
+                            setViewYear(now.getFullYear());
+                            selectMonth(now.getMonth());
+                        }}>
+                            Bulan ini
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="flex-1 text-xs" onClick={() => {
+                            const now = new Date();
+                            const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                            setViewYear(prev.getFullYear());
+                            selectMonth(prev.getMonth());
+                        }}>
+                            Bulan lalu
+                        </Button>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
     );
 }
 

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\WhatsAppGateway;
+use App\Services\WhatsApp\WhatsappWebJsGateway;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +14,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(\App\Contracts\WhatsAppGateway::class, \App\Services\WhatsApp\WhatsappWebJsGateway::class);
+        $this->app->bind(WhatsAppGateway::class, WhatsappWebJsGateway::class);
     }
 
     /**

@@ -19,6 +19,7 @@ class WhatsAppTransactionParser
             if ($amount > 0) {
                 return ['command' => 'saldo_awal', 'amount' => $amount];
             }
+
             return null;
         }
 
@@ -28,6 +29,7 @@ class WhatsAppTransactionParser
             if ($amount > 0) {
                 return ['command' => 'saldo_sekarang', 'amount' => $amount];
             }
+
             return null;
         }
 
@@ -43,7 +45,7 @@ class WhatsAppTransactionParser
     {
         // 1. Extract amount
         $amount = $this->extractAmount($text);
-        if (!$amount) {
+        if (! $amount) {
             return null;
         }
 
@@ -79,16 +81,18 @@ class WhatsAppTransactionParser
         $str = str_replace(' ', '', $str);
         // Replace comma with dot if it's used as decimal for juta
         $str = str_replace(',', '.', $str);
-        
+
         // Handle "jt", "juta"
         if (str_contains($str, 'jt') || str_contains($str, 'juta')) {
             $num = (float) str_replace(['jt', 'juta'], '', $str);
+
             return $num * 1000000;
         }
 
         // Handle "rb", "ribu", "k"
         if (str_contains($str, 'rb') || str_contains($str, 'ribu') || str_contains($str, 'k')) {
             $num = (float) str_replace(['rb', 'ribu', 'k'], '', $str);
+
             return $num * 1000;
         }
 
@@ -107,6 +111,7 @@ class WhatsAppTransactionParser
         if (preg_match_all($pattern, $text, $matches)) {
             // usually the amount is at the end or the last matched number
             $amountStr = end($matches[1]);
+
             return $this->parseAmount($amountStr);
         }
 
@@ -116,6 +121,7 @@ class WhatsAppTransactionParser
     protected function removeAmountFromText(string $text): string
     {
         $pattern = '/(\d+(?:[.,]\d+)?\s*(?:rb|ribu|k|jt|juta)?)(?:\s|$)/i';
+
         return preg_replace($pattern, '', $text);
     }
 

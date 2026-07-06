@@ -24,6 +24,8 @@ class AiAnalysis extends Model
         'status',
     ];
 
+    protected $appends = ['model_label'];
+
     protected function casts(): array
     {
         return [
@@ -38,5 +40,20 @@ class AiAnalysis extends Model
     public function aiRecommendations(): HasMany
     {
         return $this->hasMany(AiRecommendation::class);
+    }
+    public function getModelLabelAttribute(): string
+    {
+        if (! $this->model_name) {
+            return 'deterministic-rules';
+        }
+
+        $catalog = app(\App\Services\Ai\AiProviderCatalog::class);
+        $parts = explode(':', $this->model_name);
+
+        if (count($parts) === 2 && $catalog->isValidProvider($parts[0])) {
+            return $catalog->modelLabelFor($parts[0], $parts[1]);
+        }
+
+        return $this->model_name;
     }
 }

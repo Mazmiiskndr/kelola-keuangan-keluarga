@@ -86,6 +86,11 @@ class FinancialMetricService
                 'name' => $name ?: 'Tanpa kategori',
                 'amount' => (float) $items->sum('amount'),
                 'color' => $items->first()?->category?->color ?? '#94a3b8',
+                'top_items' => $items->sortByDesc('amount')->take(5)->map(fn (FinanceTransaction $t): array => [
+                    'merchant' => $t->merchant ?: ($t->description ?: 'Item'),
+                    'amount' => (float) $t->amount,
+                    'is_whatsapp' => $t->description === 'Created via WhatsApp',
+                ])->values()->all(),
             ])
             ->values()
             ->sortByDesc('amount')
@@ -99,14 +104,27 @@ class FinancialMetricService
             ->where('type', TransactionType::Expense->value)
             ->sortByDesc('amount')
             ->take(5)
-            ->map(fn (FinanceTransaction $transaction): array => [
-                'id' => $transaction->id,
-                'description' => $anonymize ? 'Pengeluaran anggota keluarga' : ($transaction->description ?: $transaction->category?->name),
-                'category' => $transaction->category?->name,
-                'member' => $anonymize ? null : $transaction->user?->name,
-                'amount' => (float) $transaction->amount,
-                'date' => $transaction->transaction_date?->toDateString(),
-            ])
+            ->map(function (FinanceTransaction $transaction) use ($anonymize): array {
+                $desc = $transaction->description;
+                if (! $anonymize && $desc === 'Created via WhatsApp' && $transaction->merchant) {
+                    $desc = $transaction->merchant.' (via WhatsApp)';
+                } elseif (! $anonymize && $transaction->merchant) {
+                    $desc = $transaction->merchant.($desc ? " - {$desc}" : '');
+                } elseif (! $anonymize) {
+                    $desc = $desc ?: $transaction->category?->name;
+                } else {
+                    $desc = 'Pengeluaran anggota keluarga';
+                }
+
+                return [
+                    'id' => $transaction->id,
+                    'description' => $desc,
+                    'category' => $transaction->category?->name,
+                    'member' => $anonymize ? null : $transaction->user?->name,
+                    'amount' => (float) $transaction->amount,
+                    'date' => $transaction->transaction_date?->toDateString(),
+                ];
+            })
             ->values()
             ->all();
     }

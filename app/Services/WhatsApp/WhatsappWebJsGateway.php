@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 class WhatsappWebJsGateway implements WhatsAppGateway
 {
     protected string $gatewayUrl;
+
     protected string $secret;
 
     public function __construct()
@@ -29,7 +30,7 @@ class WhatsappWebJsGateway implements WhatsAppGateway
             }
         }
 
-        $this->gatewayUrl = 'http://127.0.0.1:' . $gatewayPort;
+        $this->gatewayUrl = 'http://127.0.0.1:'.$gatewayPort;
         $this->secret = $gatewaySecret;
     }
 
@@ -45,7 +46,7 @@ class WhatsappWebJsGateway implements WhatsAppGateway
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->secret,
+                'Authorization' => 'Bearer '.$this->secret,
             ])->post("{$this->gatewayUrl}/send-message", [
                 'phone' => $target,
                 'message' => $message,
@@ -53,7 +54,8 @@ class WhatsappWebJsGateway implements WhatsAppGateway
 
             return $response->successful();
         } catch (\Exception $e) {
-            Log::error('WhatsAppGateway Error: ' . $e->getMessage());
+            Log::error('WhatsAppGateway Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -67,7 +69,7 @@ class WhatsappWebJsGateway implements WhatsAppGateway
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
         if (str_starts_with((string) $cleanPhone, '0')) {
-            return '62' . substr((string) $cleanPhone, 1);
+            return '62'.substr((string) $cleanPhone, 1);
         }
 
         return (string) $cleanPhone;

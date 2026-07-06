@@ -9,7 +9,7 @@ class WhatsAppTransactionParserTest extends TestCase
 {
     public function test_can_parse_amounts()
     {
-        $parser = new WhatsAppTransactionParser();
+        $parser = new WhatsAppTransactionParser;
 
         $result1 = $parser->parse('bensin 50rb');
         $this->assertEquals(50000, $result1['amount']);
@@ -20,7 +20,7 @@ class WhatsAppTransactionParserTest extends TestCase
 
         $result3 = $parser->parse('beli nasgor 25rb');
         $this->assertEquals(25000, $result3['amount']);
-        
+
         $result4 = $parser->parse('gaji 5jt');
         $this->assertEquals(5000000, $result4['amount']);
         $this->assertEquals('income', $result4['type']);
@@ -28,7 +28,7 @@ class WhatsAppTransactionParserTest extends TestCase
 
     public function test_can_parse_confirmation_commands_case_insensitively()
     {
-        $parser = new WhatsAppTransactionParser();
+        $parser = new WhatsAppTransactionParser;
 
         $this->assertEquals(['command' => 'ok'], $parser->parse('ok'));
         $this->assertEquals(['command' => 'ok'], $parser->parse('OK'));
@@ -39,7 +39,7 @@ class WhatsAppTransactionParserTest extends TestCase
 
     public function test_can_categorize_subscription_services()
     {
-        $parser = new WhatsAppTransactionParser();
+        $parser = new WhatsAppTransactionParser;
 
         $this->assertEquals('Langganan', $parser->parse('Langganan Youtube 50k')['category']);
         $this->assertEquals('Langganan', $parser->parse('youtube 50k')['category']);

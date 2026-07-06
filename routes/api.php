@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
+use App\Http\Middleware\VerifyInternalWhatsAppSecret;
+use Illuminate\Support\Facades\Route;
 
-Route::middleware(['api', \App\Http\Middleware\VerifyInternalWhatsAppSecret::class])->group(function () {
+Route::middleware(['api', VerifyInternalWhatsAppSecret::class])->group(function () {
     Route::post('/internal/whatsapp/messages', [WhatsAppWebhookController::class, 'handleMessage']);
 });

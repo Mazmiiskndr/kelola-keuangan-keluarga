@@ -115,7 +115,7 @@ export default function ReportsIndex({ report, families }: ReportsProps) {
                         <CardHeader>
                             <CardTitle>Tren</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-3 pt-0 pb-3">
                             <SimpleBarChart data={report.trend} />
                         </CardContent>
                     </Card>

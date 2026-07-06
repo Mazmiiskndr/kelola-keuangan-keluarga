@@ -3,11 +3,12 @@
 namespace App\Services\WhatsApp;
 
 use App\Contracts\WhatsAppGateway;
-use App\Models\User;
+use App\Models\Category;
+use App\Models\FinanceTransaction;
 use App\Models\FinancialAccount;
+use App\Models\User;
 use App\Services\Finance\TransactionService;
 use Illuminate\Support\Facades\Cache;
-use App\Models\Category;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppBotService
@@ -15,8 +16,8 @@ class WhatsAppBotService
     private ?array $queuedReplies = null;
 
     public function __construct(
-        protected WhatsAppGateway $gateway, 
-        protected WhatsAppTransactionParser $parser, 
+        protected WhatsAppGateway $gateway,
+        protected WhatsAppTransactionParser $parser,
         protected TransactionService $transactionService
     ) {}
 
@@ -26,10 +27,10 @@ class WhatsAppBotService
         $replyTo ??= $phone;
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
         if (str_starts_with($cleanPhone, '62')) {
-            $localPhone = '0' . substr($cleanPhone, 2);
+            $localPhone = '0'.substr($cleanPhone, 2);
         } elseif (str_starts_with($cleanPhone, '0')) {
             $localPhone = $cleanPhone;
-            $cleanPhone = '62' . substr($localPhone, 1);
+            $cleanPhone = '62'.substr($localPhone, 1);
         } else {
             $localPhone = $cleanPhone;
         }
@@ -39,13 +40,14 @@ class WhatsAppBotService
             ->orWhere('whatsapp_lid', $cleanPhone)
             ->first();
 
-        if (!$user) {
+        if (! $user) {
             Log::warning('WhatsApp sender is not registered.', [
                 'phone' => $phone,
                 'clean_phone' => $cleanPhone,
                 'local_phone' => $localPhone,
             ]);
-            $this->reply($replyTo, "Nomor Anda belum terdaftar. Silakan atur nomor WhatsApp di profil aplikasi Kelola Keuangan Keluarga.");
+            $this->reply($replyTo, 'Nomor Anda belum terdaftar. Silakan atur nomor WhatsApp di profil aplikasi Kelola Keuangan Keluarga.');
+
             return $this->flushQueuedReplies();
         }
 
@@ -53,13 +55,14 @@ class WhatsAppBotService
 
         $parsed = $this->parser->parse($body);
 
-        if (!$parsed) {
+        if (! $parsed) {
             Log::warning('WhatsApp message could not be parsed.', [
                 'user_id' => $user->id,
                 'phone' => $phone,
                 'body' => $body,
             ]);
             $this->reply($replyTo, "Maaf, saya tidak mengerti perintah tersebut. Coba format seperti: 'bensin 50k'.");
+
             return $this->flushQueuedReplies();
         }
 
@@ -73,21 +76,25 @@ class WhatsAppBotService
 
         if ($command === 'ok') {
             $this->handleConfirmation($user, $replyTo);
+
             return $this->flushQueuedReplies();
         }
 
         if ($command === 'batal') {
             $this->handleCancellation($user, $replyTo);
+
             return $this->flushQueuedReplies();
         }
 
         if ($command === 'budget' || $command === 'report') {
             $this->handleReport($user, $replyTo, $command);
+
             return $this->flushQueuedReplies();
         }
-        
+
         if ($command === 'saldo_awal' || $command === 'saldo_sekarang') {
             $this->handleSaldoSnapshot($user, $replyTo, $command, $parsed['amount']);
+
             return $this->flushQueuedReplies();
         }
 
@@ -104,8 +111,9 @@ class WhatsAppBotService
             ->where('is_active', true)
             ->first();
 
-        if (!$account) {
-            $this->reply($phone, "Anda belum memiliki akun keuangan yang aktif. Silakan buat di aplikasi.");
+        if (! $account) {
+            $this->reply($phone, 'Anda belum memiliki akun keuangan yang aktif. Silakan buat di aplikasi.');
+
             return;
         }
 
@@ -115,7 +123,7 @@ class WhatsAppBotService
         $type = $parsed['type'];
         $accountName = $account->name;
 
-        Cache::put('wa_draft_' . $user->id, [
+        Cache::put('wa_draft_'.$user->id, [
             'amount' => $parsed['amount'],
             'title' => $title,
             'category_name' => $category,
@@ -135,17 +143,18 @@ class WhatsAppBotService
         ]);
 
         $typeLabel = $type === 'expense' ? 'Pengeluaran' : 'Pemasukan';
-        
+
         $message = "📝 *Draf Transaksi*\n💰 {$typeLabel} {$title} *Rp{$amountFormatted}*\n📂 Kategori *{$category}*\n🏦 Dari saldo *{$accountName}*\n\nBalas *OK* atau *Batal*";
         $this->reply($phone, $message);
     }
 
     protected function handleConfirmation(User $user, string $phone): void
     {
-        $draft = Cache::get('wa_draft_' . $user->id);
+        $draft = Cache::get('wa_draft_'.$user->id);
 
-        if (!$draft) {
-            $this->reply($phone, "Tidak ada draft transaksi yang menunggu konfirmasi atau draft sudah kadaluarsa.");
+        if (! $draft) {
+            $this->reply($phone, 'Tidak ada draft transaksi yang menunggu konfirmasi atau draft sudah kadaluarsa.');
+
             return;
         }
 
@@ -170,7 +179,7 @@ class WhatsAppBotService
                 'is_recurring' => false,
             ]);
 
-            Cache::forget('wa_draft_' . $user->id);
+            Cache::forget('wa_draft_'.$user->id);
 
             $account = FinancialAccount::find($draft['account_id']);
             $balanceFormatted = number_format($account->current_balance, 0, ',', '.');
@@ -180,17 +189,17 @@ class WhatsAppBotService
             $message = "✅ *Berhasil Dicatat!*\n💰 {$typeLabel} {$draft['title']} : *Rp{$amountFormatted}*\n📂 Kategori : *{$draft['category_name']}*\n💳 Akun : *{$account->name}*\n🏦 Sisa Saldo : *Rp{$balanceFormatted}*";
             $this->reply($phone, $message);
         } catch (\Exception $e) {
-            $this->reply($phone, "Gagal mencatat transaksi: " . $e->getMessage());
+            $this->reply($phone, 'Gagal mencatat transaksi: '.$e->getMessage());
         }
     }
 
     protected function handleCancellation(User $user, string $phone): void
     {
-        if (Cache::has('wa_draft_' . $user->id)) {
-            Cache::forget('wa_draft_' . $user->id);
-            $this->reply($phone, "Draft dibatalkan.");
+        if (Cache::has('wa_draft_'.$user->id)) {
+            Cache::forget('wa_draft_'.$user->id);
+            $this->reply($phone, 'Draft dibatalkan.');
         } else {
-            $this->reply($phone, "Tidak ada draft yang aktif.");
+            $this->reply($phone, 'Tidak ada draft yang aktif.');
         }
     }
 
@@ -198,7 +207,7 @@ class WhatsAppBotService
     {
         $this->reply($phone, "Laporan {$type} bulan ini sedang disiapkan... (Fitur ini dapat diperluas menggunakan laporan lengkap di aplikasi)");
     }
-    
+
     protected function handleSaldoSnapshot(User $user, string $phone, string $command, float $amount): void
     {
         $amountFormatted = number_format($amount, 0, ',', '.');
@@ -207,24 +216,24 @@ class WhatsAppBotService
             $this->reply($phone, "Saldo awal tercatat *Rp{$amountFormatted}*.");
         } else {
             $awal = Cache::get('wa_saldo_awal_'.$user->id, 0);
-            
-            $income = \App\Models\FinanceTransaction::where('user_id', $user->id)
+
+            $income = FinanceTransaction::where('user_id', $user->id)
                 ->where('type', 'income')
                 ->whereMonth('transaction_date', now()->month)
                 ->sum('amount');
-                
-            $expense = \App\Models\FinanceTransaction::where('user_id', $user->id)
+
+            $expense = FinanceTransaction::where('user_id', $user->id)
                 ->where('type', 'expense')
                 ->whereMonth('transaction_date', now()->month)
                 ->sum('amount');
-                
+
             $untracked = $awal + $income - $expense - $amount;
-            
+
             if ($untracked > 0) {
                 $untrackedFormatted = number_format($untracked, 0, ',', '.');
                 $this->reply($phone, "Ada *Rp{$untrackedFormatted}* pengeluaran belum tercatat bulan ini.");
             } else {
-                $this->reply($phone, "Saldo cocok. Tidak ada pengeluaran yang belum tercatat.");
+                $this->reply($phone, 'Saldo cocok. Tidak ada pengeluaran yang belum tercatat.');
             }
         }
     }
