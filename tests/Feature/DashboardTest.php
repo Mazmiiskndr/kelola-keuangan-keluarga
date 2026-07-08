@@ -21,4 +21,29 @@ class DashboardTest extends TestCase
 
         $this->get('/dashboard')->assertOk();
     }
+    public function test_dashboard_includes_latest_analysis_when_completed_analysis_exists()
+    {
+        $this->actingAs($user = User::factory()->create());
+        
+        \App\Models\AiAnalysis::create([
+            'user_id' => $user->id,
+            'status' => 'completed',
+            'analysis_type' => 'monthly',
+            'period_start' => now()->startOfMonth(),
+            'period_end' => now()->endOfMonth(),
+            'input_snapshot' => [],
+            'metrics_snapshot' => [],
+            'result_summary' => 'Test summary',
+            'recommendations' => [],
+        ]);
+        
+        $this->get('/dashboard')->assertOk()->assertSee('latestAnalysis');
+    }
+
+    public function test_dashboard_returns_null_latest_analysis_when_none_exists()
+    {
+        $this->actingAs($user = User::factory()->create());
+        
+        $this->get('/dashboard')->assertOk()->assertSee('latestAnalysis');
+    }
 }

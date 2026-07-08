@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Family;
+use App\Services\Ai\AiProviderCatalog;
 use App\Services\Finance\CategoryBootstrapService;
 use App\Services\Finance\FamilyAccessService;
 use App\Services\Finance\FinancialMetricService;
@@ -22,6 +23,7 @@ class DashboardController extends Controller
         private readonly FinancialMetricService $metrics,
         private readonly CategoryBootstrapService $categories,
         private readonly FamilyAccessService $families,
+        private readonly AiProviderCatalog $catalog,
     ) {}
 
     public function __invoke(Request $request): Response|RedirectResponse
@@ -45,6 +47,12 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'summary' => $this->metrics->monthlySummary($user, $request->string('period')->toString() ?: null, $family ? 'family' : 'personal', $family),
+            'latestAnalysis' => \App\Models\AiAnalysis::query()
+                ->with('aiRecommendations')
+                ->where('user_id', $user->id)
+                ->latest()
+                ->first(),
+            'aiModelLabel' => $this->catalog->resolvedModelLabelFor($user->ai_provider, $user->ai_model),
             'families' => $families->map(fn (Family $family): array => [
                 'id' => $family->id,
                 'name' => $family->name,

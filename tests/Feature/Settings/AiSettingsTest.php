@@ -3,6 +3,7 @@
 namespace Tests\Feature\Settings;
 
 use App\Ai\Agents\FinancialAdvisorAgent;
+use App\Models\AiAnalysis;
 use App\Models\Category;
 use App\Models\FinanceTransaction;
 use App\Models\FinancialAccount;
@@ -61,7 +62,7 @@ class AiSettingsTest extends TestCase
 
         $response = $this->actingAs($user)->put('/settings/ai', [
             'ai_provider' => 'gemini',
-            'ai_model' => 'gemini-2.5-flash',
+            'ai_model' => 'gemini-3.5-flash',
             'ai_api_key' => 'valid-test-key',
         ]);
 
@@ -69,7 +70,7 @@ class AiSettingsTest extends TestCase
 
         $user->refresh();
         $this->assertSame('gemini', $user->ai_provider);
-        $this->assertSame('gemini-2.5-flash', $user->ai_model);
+        $this->assertSame('gemini-3.5-flash', $user->ai_model);
         $this->assertSame('valid-test-key', $user->ai_api_key);
     }
 
@@ -114,13 +115,13 @@ class AiSettingsTest extends TestCase
 
         $testResponse = $this->actingAs($user)->postJson('/settings/ai/test', [
             'ai_provider' => 'gemini',
-            'ai_model' => 'gemini-2.5-flash',
+            'ai_model' => 'gemini-3.5-flash',
             'ai_api_key' => AiProviderCatalog::MASKED_KEY,
         ]);
 
         $response = $this->actingAs($user)->put('/settings/ai', [
             'ai_provider' => 'gemini',
-            'ai_model' => 'gemini-2.5-flash',
+            'ai_model' => 'gemini-3.5-flash',
             'ai_api_key' => AiProviderCatalog::MASKED_KEY,
             'verification_token' => $testResponse->json('verification_token'),
         ]);
@@ -128,8 +129,23 @@ class AiSettingsTest extends TestCase
         $response->assertSessionHasNoErrors();
 
         $user->refresh();
-        $this->assertSame('gemini-2.5-flash', $user->ai_model);
+        $this->assertSame('gemini-3.5-flash', $user->ai_model);
         $this->assertSame('stored-key', $user->ai_api_key);
+    }
+
+    public function test_gemini_models_below_version_three_are_rejected(): void
+    {
+        AiConnectionTestAgent::fake(['KONEKSI_VALID']);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/settings/ai/test', [
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-2.5-flash',
+            'ai_api_key' => 'valid-test-key',
+        ])->assertUnprocessable();
+
+        AiConnectionTestAgent::assertNeverPrompted();
     }
 
     public function test_invalid_model_is_rejected_before_connection_test(): void
@@ -224,5 +240,73 @@ class AiSettingsTest extends TestCase
         $this->assertSame('gemini:gemini-3.5-flash', $analysis->model_name);
         $this->assertSame('Cash flow positif dan rekomendasi sudah memakai provider pilihan.', $analysis->result_summary);
         $this->assertSame(1, $analysis->aiRecommendations()->count());
+    }
+
+    public function test_ai_analysis_uses_default_gemini_three_model_when_saved_model_is_legacy(): void
+    {
+        FinancialAdvisorAgent::fake([[
+            'summary' => 'Analisis memakai default Gemini 3 karena model lama tidak valid.',
+            'recommendations' => [
+                [
+                    'type' => 'saving_plan',
+                    'title' => 'Pakai model terbaru',
+                    'description' => 'Model lama otomatis diganti ke default yang valid.',
+                ],
+            ],
+        ]]);
+
+        $user = User::factory()->create([
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-1.5-pro',
+            'ai_api_key' => 'stored-key',
+        ]);
+        $account = FinancialAccount::query()->create([
+            'user_id' => $user->id,
+            'name' => 'BCA',
+            'type' => 'bank',
+            'initial_balance' => 10000,
+            'current_balance' => 10000,
+            'currency' => 'IDR',
+            'visibility' => 'private',
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'user_id' => $user->id,
+            'name' => 'Makan',
+            'type' => 'expense',
+            'is_default' => false,
+        ]);
+        FinanceTransaction::query()->create([
+            'user_id' => $user->id,
+            'financial_account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 2000,
+            'transaction_date' => now()->toDateString(),
+            'visibility' => 'private',
+            'need_type' => 'lifestyle',
+            'merchant' => 'Makan',
+        ]);
+
+        $analysis = app(AiAnalysisService::class)->generateMonthly($user, now()->format('Y-m'));
+
+        $this->assertSame('gemini:gemini-3.5-flash', $analysis->model_name);
+        $this->assertSame('Gemini 3.5 Flash', $analysis->model_label);
+    }
+
+    public function test_legacy_gemini_model_label_does_not_display_raw_model_id(): void
+    {
+        $analysis = new AiAnalysis([
+            'model_name' => 'gemini-1.5-pro',
+        ]);
+
+        $this->assertSame('Gemini Legacy Model', $analysis->model_label);
+    }
+
+    public function test_configured_model_label_falls_back_to_default_when_saved_gemini_model_is_invalid(): void
+    {
+        $catalog = app(AiProviderCatalog::class);
+
+        $this->assertSame('Gemini 3.5 Flash', $catalog->resolvedModelLabelFor('gemini', 'gemini-1.5-pro'));
     }
 }

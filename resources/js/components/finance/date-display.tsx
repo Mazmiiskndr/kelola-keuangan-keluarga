@@ -26,7 +26,7 @@ function formatDateOnly(value: string, fallback: string): string {
     const parts = new Intl.DateTimeFormat('id-ID', {
         timeZone: jakartaTimeZone,
         month: 'long',
-        year: '2-digit',
+        year: 'numeric',
         day: '2-digit',
     })
         .formatToParts(date)
@@ -91,7 +91,7 @@ function formatDate(date: Date, fallback: string): string {
     const parts = new Intl.DateTimeFormat('id-ID', {
         timeZone: jakartaTimeZone,
         month: 'long',
-        year: '2-digit',
+        year: 'numeric',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',

@@ -23,25 +23,29 @@ class AiAnalysisService
     {
         $snapshot = $this->metrics->monthlySummary($user, $period);
         $aiResult = $this->generateWithConfiguredProvider($user, $snapshot);
+
+        if (!$aiResult) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ai' => 'AI gagal memproses (pastikan API Key Anda sudah diisi di menu Pengaturan dan koneksi internet stabil).'
+            ]);
+        }
+
         $healthScore = $this->calculateHealthScore($snapshot['totals']);
-
-        $fallback = $this->fallbackAnalysis($snapshot);
-
-        $recommendations = $aiResult['recommendations'] ?? $this->deterministicRecommendations($snapshot);
+        $recommendations = $aiResult['recommendations'];
 
         $analysis = AiAnalysis::query()->create([
             'user_id' => $user->id,
             'period_start' => $snapshot['period']['start'],
             'period_end' => $snapshot['period']['end'],
             'analysis_type' => AiAnalysisType::Monthly->value,
-            'headline' => $aiResult['headline'] ?? $fallback['headline'],
-            'tone' => $aiResult['tone'] ?? $fallback['tone'],
+            'headline' => $aiResult['headline'],
+            'tone' => $aiResult['tone'],
             'health_score' => $healthScore,
             'input_snapshot' => $snapshot,
             'metrics_snapshot' => $snapshot['totals'],
-            'result_summary' => $aiResult['summary'] ?? $fallback['summary'],
+            'result_summary' => $aiResult['summary'],
             'recommendations' => $recommendations,
-            'model_name' => $aiResult['model'] ?? config('ai.finance_analysis_model', 'deterministic-rules'),
+            'model_name' => $aiResult['model'],
             'status' => 'completed',
         ]);
 
@@ -68,9 +72,18 @@ class AiAnalysisService
     private function generateWithConfiguredProvider(User $user, array $snapshot): ?array
     {
         $provider = $user->ai_provider ?: $this->catalog->defaultProvider();
+
+        if (! $this->catalog->isValidProvider($provider) || blank($user->ai_api_key)) {
+            return null;
+        }
+
         $model = $user->ai_model ?: $this->catalog->defaultModelFor($provider);
 
-        if (! $this->catalog->isValidProvider($provider) || ! $this->catalog->isValidModel($provider, $model) || blank($user->ai_api_key)) {
+        if (! $this->catalog->isValidModel($provider, $model)) {
+            $model = $this->catalog->defaultModelFor($provider);
+        }
+
+        if (! $this->catalog->isValidModel($provider, $model)) {
             return null;
         }
 
@@ -152,98 +165,5 @@ class AiAnalysisService
         }
 
         return max(0, min(100, (int) $score));
-    }
-
-    private function fallbackAnalysis(array $snapshot): array
-    {
-        $cashFlow = (float) Arr::get($snapshot, 'totals.cash_flow', 0);
-        $expense = (float) Arr::get($snapshot, 'totals.expense', 0);
-        $debtRatio = (float) Arr::get($snapshot, 'totals.debt_to_income_ratio', 0);
-
-        if ($cashFlow < 0) {
-            return [
-                'headline' => 'Cash flow bulan ini negatif, butuh penyesuaian segera',
-                'tone' => 'alert',
-                'summary' => 'Pengeluaranmu saat ini lebih besar dari pemasukan. Jangan panik, tapi kita perlu segera mencari pos pengeluaran fleksibel yang bisa dikurangi bulan ini agar tidak menggerus tabungan.',
-            ];
-        }
-
-        if ($debtRatio >= 30) {
-            return [
-                'headline' => 'Hati-hati, beban cicilanmu cukup tinggi',
-                'tone' => 'caution',
-                'summary' => 'Cash flow kamu positif, tapi rasio cicilan terhadap pendapatan sudah di batas atas. Usahakan jangan menambah utang baru dulu dan fokus bereskan cicilan berjalan.',
-            ];
-        }
-
-        if ($expense > 0) {
-            return [
-                'headline' => 'Keuangan bulan ini aman terkendali!',
-                'tone' => 'encouraging',
-                'summary' => 'Pemasukan dan pengeluaran kamu cukup berimbang. Masih ada peluang untuk mengoptimalkan sisa uang ke tabungan atau dana darurat tanpa mengganggu kenyamanan hidup.',
-            ];
-        }
-
-        return [
-            'headline' => 'Belum banyak transaksi bulan ini',
-            'tone' => 'neutral',
-            'summary' => 'Data pengeluaranmu belum cukup untuk dianalisis lebih dalam. Yuk rutin catat setiap transaksi agar ke depannya insight ini lebih akurat.',
-        ];
-    }
-
-    private function deterministicRecommendations(array $snapshot): array
-    {
-        $largestCategory = $snapshot['expense_by_category'][0] ?? null;
-        $cashFlow = (float) Arr::get($snapshot, 'totals.cash_flow', 0);
-        $debtDue = (float) Arr::get($snapshot, 'totals.debt_due', 0);
-
-        $recommendations = [];
-
-        if ($largestCategory) {
-            $savingAmount = round(((float) $largestCategory['amount']) * 0.15);
-            $recommendations[] = [
-                'type' => 'opportunity',
-                'priority' => 'Bisa Dioptimalkan',
-                'title' => 'Kurangi Pengeluaran '.$largestCategory['name'],
-                'description' => 'Ini adalah pos pengeluaran terbesar kamu bulan ini.',
-                'why_it_matters' => 'Mengurangi 15-20% dari kategori ini bisa langsung memberikan ruang bernapas untuk cash flow bulan depan.',
-                'next_action' => 'Evaluasi kembali budget untuk kategori ini',
-                'source_metric' => 'expense_by_category',
-                'estimated_saving_amount' => $savingAmount,
-                'confidence_score' => 78,
-            ];
-        }
-
-        if ($debtDue > 0) {
-            $recommendations[] = [
-                'type' => 'alert',
-                'priority' => 'Penting',
-                'title' => 'Amankan Dana Cicilan Dulu',
-                'description' => 'Beban cicilan bulanan kamu butuh perhatian ekstra.',
-                'why_it_matters' => 'Gagal bayar cicilan berdampak panjang ke skor kredit. Pastikan dana ini dialokasikan di awal sebelum kamu menabung atau investasi.',
-                'next_action' => 'Bayar cicilan sebelum tanggal jatuh tempo',
-                'source_metric' => 'debt_due',
-                'estimated_saving_amount' => 0,
-                'confidence_score' => 86,
-            ];
-        }
-
-        $recommendations[] = [
-            'type' => 'goal',
-            'priority' => $cashFlow > 0 ? 'Rencana' : 'Penting',
-            'title' => $cashFlow > 0 ? 'Tabung Sisa Uang Bulan Ini' : 'Pulihkan Kondisi Keuangan',
-            'description' => $cashFlow > 0
-                ? 'Ada uang lebih yang sayang kalau habis begitu saja.'
-                : 'Fokus pangkas pengeluaran yang kurang penting.',
-            'why_it_matters' => $cashFlow > 0
-                ? 'Mengalokasikan sisa cash flow ke tabungan akan mempercepat tercapainya tujuan keuanganmu.'
-                : 'Cash flow negatif akan memaksa kamu menggerus tabungan atau berutang jika dibiarkan.',
-            'next_action' => $cashFlow > 0 ? 'Transfer ke rekening tabungan' : 'Hentikan belanja non-esensial sementara waktu',
-            'source_metric' => 'cash_flow',
-            'estimated_saving_amount' => max(0, round($cashFlow * 0.5)),
-            'confidence_score' => 72,
-        ];
-
-        return $recommendations;
     }
 }

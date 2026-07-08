@@ -1,40 +1,206 @@
 import { formatMoney } from '@/components/finance/money-display';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+    BarElement,
+    CategoryScale,
+    Chart as ChartJS,
+    Legend,
+    LinearScale,
+    Tooltip,
+    type ChartData,
+    type ChartOptions,
+    type ScriptableContext,
+    type TooltipItem,
+} from 'chart.js';
+import { useMemo } from 'react';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 interface SimpleBarChartProps {
     data: Array<{ key?: string; label: string; income: number; expense: number }>;
 }
 
-type TrendItem = SimpleBarChartProps['data'][number];
+function chartGradient(context: ScriptableContext<'bar'>, from: string, to: string) {
+    const { chart } = context;
+    const { chartArea, ctx } = chart;
+
+    if (!chartArea) {
+        return from;
+    }
+
+    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    gradient.addColorStop(0, from);
+    gradient.addColorStop(1, to);
+
+    return gradient;
+}
+
+function shortMoney(value: number | string) {
+    const amount = Number(value || 0);
+
+    if (amount >= 1_000_000_000) {
+        return `${Math.round(amount / 1_000_000_000)}M`;
+    }
+
+    if (amount >= 1_000_000) {
+        return `${Math.round(amount / 1_000_000)}jt`;
+    }
+
+    if (amount >= 1_000) {
+        return `${Math.round(amount / 1_000)}rb`;
+    }
+
+    return `${amount}`;
+}
 
 export function SimpleBarChart({ data }: SimpleBarChartProps) {
-    const maxValue = Math.max(...data.flatMap((item) => [Number(item.income), Number(item.expense)]), 1);
-    const totalIncome = data.reduce((total, item) => total + Number(item.income || 0), 0);
-    const totalExpense = data.reduce((total, item) => total + Number(item.expense || 0), 0);
-    const netCashflow = totalIncome - totalExpense;
+    const isMobile = useIsMobile();
+    const totals = useMemo(
+        () =>
+            data.reduce(
+                (summary, item) => ({
+                    income: summary.income + Number(item.income || 0),
+                    expense: summary.expense + Number(item.expense || 0),
+                }),
+                { income: 0, expense: 0 },
+            ),
+        [data],
+    );
+    const netCashflow = totals.income - totals.expense;
+    const hasData = data.some((item) => Number(item.income || 0) > 0 || Number(item.expense || 0) > 0);
+
+    const chartData = useMemo<ChartData<'bar'>>(
+        () => ({
+            labels: data.map((item) => item.label),
+            datasets: [
+                {
+                    label: 'Pemasukan',
+                    data: data.map((item) => Number(item.income || 0)),
+                    backgroundColor: (context) => chartGradient(context, 'rgba(16, 185, 129, 0.95)', 'rgba(20, 184, 166, 0.55)'),
+                    borderColor: 'rgba(5, 150, 105, 0.85)',
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    borderSkipped: false,
+                    barPercentage: 0.72,
+                    categoryPercentage: 0.64,
+                    maxBarThickness: 28,
+                },
+                {
+                    label: 'Pengeluaran',
+                    data: data.map((item) => Number(item.expense || 0)),
+                    backgroundColor: (context) => chartGradient(context, 'rgba(244, 63, 94, 0.95)', 'rgba(236, 72, 153, 0.6)'),
+                    borderColor: 'rgba(225, 29, 72, 0.85)',
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    borderSkipped: false,
+                    barPercentage: 0.72,
+                    categoryPercentage: 0.64,
+                    maxBarThickness: 28,
+                },
+            ],
+        }),
+        [data],
+    );
+
+    const options = useMemo<ChartOptions<'bar'>>(
+        () => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 700,
+                easing: 'easeOutQuart',
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.96)',
+                    borderColor: 'rgba(148, 163, 184, 0.22)',
+                    borderWidth: 1,
+                    bodyColor: '#f8fafc',
+                    bodyFont: { size: 12, weight: 600 },
+                    boxPadding: 5,
+                    caretPadding: 8,
+                    cornerRadius: 12,
+                    displayColors: true,
+                    padding: 12,
+                    titleColor: '#e2e8f0',
+                    titleFont: { size: 12, weight: 700 },
+                    callbacks: {
+                        label(context: TooltipItem<'bar'>) {
+                            return ` ${context.dataset.label}: ${formatMoney(Number(context.raw || 0))}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    border: {
+                        display: false,
+                    },
+                    grid: {
+                        display: false,
+                    },
+                    ticks: {
+                        autoSkip: true,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        color: '#64748b',
+                        font: {
+                            size: isMobile ? 10 : 12,
+                            weight: 700,
+                        },
+                        padding: isMobile ? 4 : 8,
+                    },
+                },
+                y: {
+                    beginAtZero: true,
+                    border: {
+                        display: false,
+                    },
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.16)',
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            size: isMobile ? 10 : 11,
+                            weight: 600,
+                        },
+                        maxTicksLimit: isMobile ? 3 : 4,
+                        padding: isMobile ? 4 : 8,
+                        callback: (value) => shortMoney(value),
+                    },
+                },
+            },
+        }),
+        [isMobile],
+    );
 
     return (
-        <div className="w-full space-y-3">
-            <div className="grid gap-2 sm:grid-cols-3">
-                <TrendSummary label="Pemasukan" value={totalIncome} tone="income" />
-                <TrendSummary label="Pengeluaran" value={totalExpense} tone="expense" />
+        <div className="flex min-h-[360px] w-full min-w-0 flex-1 flex-col space-y-3 overflow-hidden sm:min-h-[420px] sm:space-y-4 lg:min-h-[460px]">
+            <div className="grid min-w-0 gap-2 sm:grid-cols-3 sm:gap-3">
+                <TrendSummary label="Pemasukan" value={totals.income} tone="income" />
+                <TrendSummary label="Pengeluaran" value={totals.expense} tone="expense" />
                 <TrendSummary label="Cash Flow" value={netCashflow} tone={netCashflow < 0 ? 'expense' : 'income'} />
             </div>
 
-            <div className="overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white px-2 pt-3 pb-2 dark:border-slate-800 dark:from-slate-950 dark:to-slate-900">
-                <div className="relative h-48">
-                    <div className="absolute inset-x-0 top-0 border-t border-dashed border-slate-200 dark:border-slate-800" />
-                    <div className="absolute inset-x-0 top-1/3 border-t border-dashed border-slate-200 dark:border-slate-800" />
-                    <div className="absolute inset-x-0 top-2/3 border-t border-dashed border-slate-200 dark:border-slate-800" />
-                    <div className="absolute inset-x-0 bottom-7 border-t border-slate-200 dark:border-slate-800" />
-
-                    <div
-                        className="relative grid h-full min-w-[520px] gap-2"
-                        style={{ gridTemplateColumns: `repeat(${data.length || 1}, minmax(0, 1fr))` }}
-                    >
-                        {data.map((item, index) => (
-                            <MonthColumn key={`${item.key ?? item.label}-${index}`} item={item} maxValue={maxValue} />
-                        ))}
-                    </div>
+            <div className="relative flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 p-3 shadow-sm sm:p-4 dark:border-slate-800 dark:from-slate-950 dark:to-slate-900/70">
+                <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/60 to-transparent sm:inset-x-6" />
+                <div className="h-[260px] min-h-0 w-full min-w-0 sm:h-[300px] md:h-[330px] lg:h-auto lg:flex-1">
+                    {hasData ? (
+                        <Bar data={chartData} options={options} />
+                    ) : (
+                        <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+                            Belum ada data tren untuk periode ini.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -44,50 +210,13 @@ export function SimpleBarChart({ data }: SimpleBarChartProps) {
 function TrendSummary({ label, value, tone }: { label: string; value: number; tone: 'income' | 'expense' }) {
     const toneClass =
         tone === 'income'
-            ? 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
-            : 'border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300';
+            ? 'border-emerald-200/70 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/50 dark:text-emerald-300'
+            : 'border-rose-200/70 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/50 dark:text-rose-300';
 
     return (
-        <div className={`rounded-lg border px-3 py-2 ${toneClass}`}>
-            <p className="text-xs font-medium opacity-80">{label}</p>
-            <p className="mt-1 text-sm font-bold">{formatMoney(value, true)}</p>
-        </div>
-    );
-}
-
-function MonthColumn({ item, maxValue }: { item: TrendItem; maxValue: number }) {
-    const income = Number(item.income || 0);
-    const expense = Number(item.expense || 0);
-    const cashflow = income - expense;
-
-    return (
-        <div className="flex min-w-0 flex-col justify-end gap-2">
-            <div className="flex h-36 items-end justify-center gap-2 rounded-lg px-1">
-                <TrendBar label={`Pemasukan ${item.label}`} value={income} maxValue={maxValue} tone="income" />
-                <TrendBar label={`Pengeluaran ${item.label}`} value={expense} maxValue={maxValue} tone="expense" />
-            </div>
-            <div className="text-center">
-                <p className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{item.label}</p>
-                <p className={`mt-1 text-[11px] font-medium ${cashflow < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{formatMoney(cashflow, true)}</p>
-            </div>
-        </div>
-    );
-}
-
-function TrendBar({ label, value, maxValue, tone }: { label: string; value: number; maxValue: number; tone: 'income' | 'expense' }) {
-    const height = value > 0 ? Math.max(8, Math.round((value / maxValue) * 100)) : 2;
-    const barClass =
-        tone === 'income'
-            ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-emerald-500/20'
-            : 'bg-gradient-to-t from-rose-600 to-pink-400 shadow-rose-500/20';
-
-    return (
-        <div className="flex h-full w-5 items-end justify-center rounded-full bg-white/70 dark:bg-slate-950/60">
-            <div className={`w-3 rounded-full shadow-lg transition-all ${barClass}`} style={{ height: `${height}%` }}>
-                <span className="sr-only">
-                    {label}: {formatMoney(value)}
-                </span>
-            </div>
+        <div className={`min-w-0 rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3 ${toneClass}`}>
+            <p className="text-xs font-semibold opacity-85">{label}</p>
+            <p className="mt-1.5 truncate text-base font-bold sm:mt-2">{formatMoney(value, true)}</p>
         </div>
     );
 }

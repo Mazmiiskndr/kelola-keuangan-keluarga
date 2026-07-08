@@ -21,6 +21,7 @@ class AiRecommendation extends Model
         'estimated_saving_amount',
         'confidence_score',
         'status',
+        'action_steps_completed',
         'due_date',
     ];
 
@@ -28,6 +29,7 @@ class AiRecommendation extends Model
     {
         return [
             'estimated_saving_amount' => 'decimal:2',
+            'action_steps_completed' => 'array',
             'due_date' => 'date',
         ];
     }

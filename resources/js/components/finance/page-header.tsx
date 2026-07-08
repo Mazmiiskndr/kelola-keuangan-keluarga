@@ -33,11 +33,12 @@ export function PageHeader({ title, description, icon: Icon, action, className }
 interface SubmitButtonProps {
     processing: boolean;
     children: React.ReactNode;
+    className?: string;
 }
 
-export function SubmitButton({ processing, children }: SubmitButtonProps) {
+export function SubmitButton({ processing, children, className }: SubmitButtonProps) {
     return (
-        <Button type="submit" disabled={processing}>
+        <Button type="submit" disabled={processing} className={className}>
             {processing ? 'Menyimpan...' : children}
         </Button>
     );

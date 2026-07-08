@@ -17,13 +17,16 @@ class AiProviderCatalog
         return [
             'gemini' => [
                 'label' => 'Google Gemini',
-                'default_model' => 'gemini-2.5-flash',
+                'default_model' => 'gemini-3.5-flash',
                 'models' => [
+                    ['value' => 'gemini-2.0-flash', 'label' => 'Gemini 2 Flash'],
+                    ['value' => 'gemini-2.0-flash-lite', 'label' => 'Gemini 2 Flash Lite'],
                     ['value' => 'gemini-2.5-flash', 'label' => 'Gemini 2.5 Flash'],
-                    ['value' => 'gemini-3-flash-preview', 'label' => 'Gemini 3 Flash Preview'],
+                    ['value' => 'gemini-2.5-flash-lite', 'label' => 'Gemini 2.5 Flash Lite'],
+                    ['value' => 'gemini-2.5-pro', 'label' => 'Gemini 2.5 Pro'],
+                    ['value' => 'gemini-3.0-flash', 'label' => 'Gemini 3 Flash'],
                     ['value' => 'gemini-3.5-flash', 'label' => 'Gemini 3.5 Flash'],
-                    ['value' => 'gemini-3.1-pro-preview', 'label' => 'Gemini 3.1 Pro Preview (perlu billing)'],
-                    ['value' => 'gemini-2.5-pro', 'label' => 'Gemini 2.5 Pro (perlu billing)'],
+                    ['value' => 'gemini-3.1-pro', 'label' => 'Gemini 3.1 Pro'],
                 ],
             ],
             'openai' => [
@@ -92,7 +95,38 @@ class AiProviderCatalog
             }
         }
 
-        return $model;
+        if (preg_match('/^gemini-(1|2)(?:\.|-)\d+/i', $model) === 1) {
+            return 'Gemini Legacy Model';
+        }
+
+        return $this->formatModelName($model);
+    }
+
+    public function resolvedModelLabelFor(?string $provider, ?string $model): string
+    {
+        $resolvedProvider = $this->isValidProvider((string) $provider) ? (string) $provider : $this->defaultProvider();
+        $resolvedModel = (string) $model;
+
+        if (! $this->isValidModel($resolvedProvider, $resolvedModel)) {
+            $resolvedModel = $this->defaultModelFor($resolvedProvider);
+        }
+
+        return $this->modelLabelFor($resolvedProvider, $resolvedModel);
+    }
+
+    public function displayModelName(string $model): string
+    {
+        $parts = explode(':', $model, 2);
+
+        if (count($parts) === 2 && $this->isValidProvider($parts[0])) {
+            return $this->modelLabelFor($parts[0], $parts[1]);
+        }
+
+        if (preg_match('/^gemini-(1|2)(?:\.|-)\d+/i', $model) === 1) {
+            return 'Gemini Legacy Model';
+        }
+
+        return $this->formatModelName($model);
     }
 
     /**
@@ -101,5 +135,25 @@ class AiProviderCatalog
     private function modelValuesFor(string $provider): array
     {
         return array_column($this->providers()[$provider]['models'] ?? [], 'value');
+    }
+
+    private function formatModelName(string $model): string
+    {
+        $formatted = preg_replace('/\s+/', ' ', str_replace(['-', '_'], ' ', $model));
+
+        return collect(explode(' ', trim((string) $formatted)))
+            ->filter()
+            ->map(function (string $part): string {
+                if (preg_match('/^\d+(?:\.\d+)?$/', $part) === 1) {
+                    return $part;
+                }
+
+                return match (strtolower($part)) {
+                    'gpt' => 'GPT',
+                    'ai' => 'AI',
+                    default => ucfirst(strtolower($part)),
+                };
+            })
+            ->implode(' ');
     }
 }

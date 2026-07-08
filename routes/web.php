@@ -49,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::resource('ai-insights', AiInsightController::class)->only(['index', 'store']);
+    Route::patch('ai-recommendations/{recommendation}', [AiInsightController::class, 'updateRecommendation'])->name('ai-recommendations.update');
     Route::resource('families', FamilyController::class)->only(['index', 'store']);
     Route::post('families/{family}/members', [FamilyMemberController::class, 'store'])->name('families.members.store');
     Route::delete('families/{family}/members/{member}', [FamilyMemberController::class, 'destroy'])->name('families.members.destroy');

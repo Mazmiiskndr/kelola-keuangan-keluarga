@@ -48,12 +48,7 @@ class AiAnalysis extends Model
         }
 
         $catalog = app(\App\Services\Ai\AiProviderCatalog::class);
-        $parts = explode(':', $this->model_name);
 
-        if (count($parts) === 2 && $catalog->isValidProvider($parts[0])) {
-            return $catalog->modelLabelFor($parts[0], $parts[1]);
-        }
-
-        return $this->model_name;
+        return $catalog->displayModelName($this->model_name);
     }
 }
