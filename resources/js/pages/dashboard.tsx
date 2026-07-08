@@ -8,6 +8,7 @@ import { ProgressRow } from '@/components/finance/progress-row';
 import { QuickMenu } from '@/components/finance/quick-menu';
 import { SimpleBarChart } from '@/components/finance/simple-bar-chart';
 import { StatCard } from '@/components/finance/stat-card';
+import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,11 +125,10 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
                             <div className="border-input mt-2 grid h-12 w-full max-w-72 grid-cols-2 rounded-md border bg-slate-50 p-[6px] shadow-sm dark:bg-slate-950">
                                 <button
                                     type="button"
-                                    className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${
-                                        currentScope === 'personal'
-                                            ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
-                                            : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
-                                    }`}
+                                    className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${currentScope === 'personal'
+                                        ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                                        : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
+                                        }`}
                                     onClick={() => openScope('personal')}
                                 >
                                     Pribadi
@@ -136,11 +136,10 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
                                 {families.length > 0 && (
                                     <button
                                         type="button"
-                                        className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${
-                                            currentScope === 'family'
-                                                ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
-                                                : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
-                                        }`}
+                                        className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${currentScope === 'family'
+                                            ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                                            : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
+                                            }`}
                                         onClick={() => openScope('family')}
                                     >
                                         Keluarga aktif
@@ -404,7 +403,7 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
 
                 {/* Latest AI Insight Section at the Bottom */}
                 {latestAnalysis ? (
-                    <Card className="relative mb-4 overflow-hidden border border-indigo-100/50 bg-gradient-to-br from-indigo-50/50 to-white shadow-md dark:border-indigo-900/50 dark:from-indigo-950/20 dark:to-slate-950">
+                    <Card className="relative overflow-hidden border border-indigo-100/50 bg-gradient-to-br from-indigo-50/50 to-white shadow-md dark:border-indigo-900/50 dark:from-indigo-950/20 dark:to-slate-950">
                         <div className="pointer-events-none absolute top-0 right-0 p-8 opacity-5">
                             <Bot className="size-32" />
                         </div>
@@ -468,7 +467,7 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
                         </CardContent>
                     </Card>
                 ) : (
-                    <Card className="mt-8 mb-4 flex flex-col items-center justify-center border-2 border-dashed bg-slate-50/50 p-8 text-center dark:bg-slate-900/50">
+                    <Card className="mt-8 flex flex-col items-center justify-center border-2 border-dashed bg-slate-50/50 p-8 text-center dark:bg-slate-900/50">
                         <Bot className="mb-3 size-10 text-slate-300" />
                         <h3 className="text-base font-medium">Belum Ada Analisis AI</h3>
                         <p className="mt-1 max-w-sm text-sm text-slate-500">
@@ -479,6 +478,8 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
                         </Button>
                     </Card>
                 )}
+
+                <PwaInstallBanner floating />
             </div>
         </AppLayout>
     );

@@ -46,7 +46,6 @@ class WhatsAppBotService
                 'clean_phone' => $cleanPhone,
                 'local_phone' => $localPhone,
             ]);
-            $this->reply($replyTo, 'Nomor Anda belum terdaftar. Silakan atur nomor WhatsApp di profil aplikasi Kelola Keuangan Keluarga.');
 
             return $this->flushQueuedReplies();
         }

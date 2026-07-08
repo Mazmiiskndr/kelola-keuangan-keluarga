@@ -26,6 +26,11 @@ const sidebarNavItems: NavItem[] = [
         url: '/settings/ai',
         icon: null,
     },
+    {
+        title: 'WhatsApp',
+        url: '/settings/whatsapp',
+        icon: null,
+    },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

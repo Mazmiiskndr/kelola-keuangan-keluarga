@@ -20,6 +20,12 @@ Route::middleware('auth')->group(function () {
     Route::put('settings/ai', [AiController::class, 'update'])->name('ai.update');
     Route::post('settings/ai/test', [AiController::class, 'test'])->name('ai.test');
 
+    Route::get('settings/whatsapp', [\App\Http\Controllers\Settings\WhatsAppController::class, 'edit'])->name('whatsapp.edit');
+    Route::patch('settings/whatsapp', [\App\Http\Controllers\Settings\WhatsAppController::class, 'update'])->name('whatsapp.update');
+    Route::get('settings/whatsapp/status', [\App\Http\Controllers\Settings\WhatsAppController::class, 'status'])->name('whatsapp.status');
+    Route::post('settings/whatsapp/logout', [\App\Http\Controllers\Settings\WhatsAppController::class, 'logout'])->name('whatsapp.logout');
+    Route::post('settings/whatsapp/restart', [\App\Http\Controllers\Settings\WhatsAppController::class, 'restart'])->name('whatsapp.restart');
+
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
     })->name('appearance');

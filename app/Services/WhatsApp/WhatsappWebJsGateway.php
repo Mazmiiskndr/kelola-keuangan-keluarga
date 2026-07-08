@@ -14,24 +14,8 @@ class WhatsappWebJsGateway implements WhatsAppGateway
 
     public function __construct()
     {
-        $gatewayEnvPath = base_path('whatsapp-gateway/.env');
-        $gatewayPort = '3100'; // Default fallback
-        $gatewaySecret = '';
-
-        if (file_exists($gatewayEnvPath)) {
-            $env = parse_ini_file($gatewayEnvPath);
-            if ($env !== false) {
-                if (isset($env['PORT'])) {
-                    $gatewayPort = $env['PORT'];
-                }
-                if (isset($env['SHARED_SECRET'])) {
-                    $gatewaySecret = $env['SHARED_SECRET'];
-                }
-            }
-        }
-
-        $this->gatewayUrl = 'http://127.0.0.1:'.$gatewayPort;
-        $this->secret = $gatewaySecret;
+        $this->gatewayUrl = config('services.whatsapp.gateway_url', 'http://127.0.0.1:3100');
+        $this->secret = config('services.whatsapp.internal_secret', '');
     }
 
     public function sendMessage(string $phone, string $message): bool
@@ -73,5 +57,74 @@ class WhatsappWebJsGateway implements WhatsAppGateway
         }
 
         return (string) $cleanPhone;
+    }
+
+    public function getStatus(): array
+    {
+        if ($this->secret === '') {
+            return $this->unavailableStatus('Gateway secret not configured.');
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer '.$this->secret,
+            ])->timeout(3)->get("{$this->gatewayUrl}/status");
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            return $this->unavailableStatus('Gateway returned error status.');
+        } catch (\Exception $e) {
+            return $this->unavailableStatus('Gateway is unreachable.');
+        }
+    }
+
+    public function logout(): bool
+    {
+        if ($this->secret === '') {
+            return false;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer '.$this->secret,
+            ])->timeout(5)->post("{$this->gatewayUrl}/logout");
+
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('WhatsAppGateway Logout Error: '.$e->getMessage());
+            return false;
+        }
+    }
+
+    public function restart(): bool
+    {
+        if ($this->secret === '') {
+            return false;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer '.$this->secret,
+            ])->timeout(5)->post("{$this->gatewayUrl}/restart");
+
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('WhatsAppGateway Restart Error: '.$e->getMessage());
+            return false;
+        }
+    }
+
+    private function unavailableStatus(string $message): array
+    {
+        return [
+            'ok' => false,
+            'state' => 'unavailable',
+            'qr_data_url' => null,
+            'phone' => null,
+            'message' => $message,
+            'updated_at' => null,
+        ];
     }
 }

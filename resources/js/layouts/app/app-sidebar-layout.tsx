@@ -2,7 +2,6 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
-import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { type BreadcrumbItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
@@ -25,7 +24,6 @@ export default function AppSidebarLayout({
                 <footer className="text-muted-foreground px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center text-xs font-medium md:px-6">
                     2026 Created by Mazmiiskndr
                 </footer>
-                <PwaInstallBanner floating />
                 <div className="fixed right-4 bottom-[calc(24px+env(safe-area-inset-bottom))] z-50 md:hidden">
                     <Link
                         href="/transactions"
