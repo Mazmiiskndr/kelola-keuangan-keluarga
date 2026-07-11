@@ -24,12 +24,11 @@ import {
     ArrowUpRight,
     Bot,
     CreditCard,
-    Eye,
     Lightbulb,
     PiggyBank,
-    ShieldCheck,
     Sparkles,
     Target,
+    TrendingDown,
     TrendingUp,
 } from 'lucide-react';
 import type React from 'react';
@@ -77,9 +76,12 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
     const expenseByCategory = summary.expense_by_category ?? [];
     const largestExpenses = summary.largest_expenses ?? [];
     const upcomingDebts = summary.upcoming_debts ?? [];
-    const activeFamilyName = summary.family?.name ?? families.find((family) => String(family.id) === selectedFamilyId)?.name ?? 'Keluarga aktif';
-    const scopeLabel = currentScope === 'family' ? 'Keluarga' : 'Pribadi';
-    const visibilityLabel = summary.can_view_family_details ? 'Detail anggota aktif' : 'Data agregat';
+    const cashFlow = Number(summary.totals.cash_flow);
+    const hasBudget = Number(summary.totals.budget) > 0;
+    const budgetRemaining = Number(summary.totals.budget) - Number(summary.totals.expense);
+    const budgetUsage = hasBudget ? Math.round((Number(summary.totals.expense) / Number(summary.totals.budget)) * 100) : 0;
+    const isCashFlowNegative = cashFlow < 0;
+    const isBudgetOver = hasBudget && budgetRemaining < 0;
     const latestRecommendations = latestAnalysis
         ? (latestAnalysis.aiRecommendations ?? latestAnalysis.ai_recommendations ?? latestAnalysis.recommendations ?? [])
         : [];
@@ -180,36 +182,88 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
                             </div>
                         </div>
                         <div className="grid min-w-0 flex-1 gap-3 md:grid-cols-2 lg:mt-7">
-                            <div className="flex h-12 min-w-0 items-center gap-3.5 rounded-md border border-blue-100 bg-blue-50/60 px-3.5 dark:border-blue-900/60 dark:bg-blue-950/30">
-                                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-white text-blue-600 shadow-sm dark:bg-slate-900 dark:text-blue-300">
-                                    <Eye className="size-4" />
+                            <div
+                                className={`flex h-12 min-w-0 items-center gap-3.5 rounded-md border px-3.5 ${
+                                    isCashFlowNegative
+                                        ? 'border-rose-100 bg-rose-50/60 dark:border-rose-900/60 dark:bg-rose-950/30'
+                                        : 'border-emerald-100 bg-emerald-50/60 dark:border-emerald-900/60 dark:bg-emerald-950/30'
+                                }`}
+                            >
+                                <span
+                                    className={`flex size-7 shrink-0 items-center justify-center rounded-md bg-white shadow-sm dark:bg-slate-900 ${
+                                        isCashFlowNegative ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'
+                                    }`}
+                                >
+                                    {isCashFlowNegative ? <TrendingDown className="size-4" /> : <TrendingUp className="size-4" />}
                                 </span>
-                                <div className="min-w-0">
-                                    <p className="text-[10px] leading-none font-semibold tracking-wide text-blue-700 uppercase dark:text-blue-300">
-                                        Tampilan aktif
-                                    </p>
-                                    <p className="truncate text-sm font-bold text-slate-950 dark:text-white">
-                                        {scopeLabel}
-                                        {currentScope === 'family' ? ` - ${activeFamilyName}` : ''}
-                                    </p>
+                                <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p
+                                            className={`text-[10px] leading-none font-semibold tracking-wide uppercase ${
+                                                isCashFlowNegative ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'
+                                            }`}
+                                        >
+                                            Arus kas bulan ini
+                                        </p>
+                                        <p className="mt-1 truncate text-sm font-bold text-slate-950 dark:text-white">
+                                            <MoneyDisplay value={cashFlow} />
+                                        </p>
+                                    </div>
+                                    <span
+                                        className={`shrink-0 text-xs font-semibold ${
+                                            isCashFlowNegative ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'
+                                        }`}
+                                    >
+                                        {isCashFlowNegative ? 'Defisit' : cashFlow === 0 ? 'Seimbang' : 'Positif'}
+                                    </span>
                                 </div>
                             </div>
-                            <div className="flex h-12 min-w-0 items-center gap-3.5 rounded-md border border-emerald-100 bg-emerald-50/60 px-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/30">
-                                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-white text-emerald-600 shadow-sm dark:bg-slate-900 dark:text-emerald-300">
-                                    <ShieldCheck className="size-4" />
+                            <div
+                                className={`flex h-12 min-w-0 items-center gap-3.5 rounded-md border px-3.5 ${
+                                    isBudgetOver
+                                        ? 'border-rose-100 bg-rose-50/60 dark:border-rose-900/60 dark:bg-rose-950/30'
+                                        : 'border-blue-100 bg-blue-50/60 dark:border-blue-900/60 dark:bg-blue-950/30'
+                                }`}
+                            >
+                                <span
+                                    className={`flex size-7 shrink-0 items-center justify-center rounded-md bg-white shadow-sm dark:bg-slate-900 ${
+                                        isBudgetOver ? 'text-rose-600 dark:text-rose-300' : 'text-blue-600 dark:text-blue-300'
+                                    }`}
+                                >
+                                    <Target className="size-4" />
                                 </span>
-                                <div className="min-w-0">
-                                    <div className="flex min-w-0 items-center gap-3 pr-2">
-                                        <p className="shrink-0 text-[10px] leading-none font-semibold tracking-wide text-emerald-700 uppercase dark:text-emerald-300">
-                                            Akses data
+                                <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p
+                                            className={`text-[10px] leading-none font-semibold tracking-wide uppercase ${
+                                                isBudgetOver ? 'text-rose-700 dark:text-rose-300' : 'text-blue-700 dark:text-blue-300'
+                                            }`}
+                                        >
+                                            Anggaran bulan ini
                                         </p>
-                                        {summary.family_role && (
-                                            <Badge className="h-4 rounded-full bg-violet-50 p-2 text-[10px] text-violet-700 dark:bg-violet-950 dark:text-violet-200">
-                                                {summary.family_role}
-                                            </Badge>
+                                        {hasBudget ? (
+                                            <p className="mt-1 truncate text-sm font-bold text-slate-950 dark:text-white">
+                                                {isBudgetOver ? 'Melebihi ' : 'Sisa '}
+                                                <MoneyDisplay value={Math.abs(budgetRemaining)} />
+                                            </p>
+                                        ) : (
+                                            <Link
+                                                href="/budgets"
+                                                className="mt-1 inline-flex text-sm font-bold text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
+                                            >
+                                                Atur budget bulanan
+                                            </Link>
                                         )}
                                     </div>
-                                    <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{visibilityLabel}</p>
+                                    {hasBudget && (
+                                        <span
+                                            className={`ml-1 shrink-0 text-xs font-semibold ${
+                                                isBudgetOver ? 'text-rose-700 dark:text-rose-300' : 'text-blue-700 dark:text-blue-300'
+                                            }`}
+                                        >
+                                            {budgetUsage}% Terpakai
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
