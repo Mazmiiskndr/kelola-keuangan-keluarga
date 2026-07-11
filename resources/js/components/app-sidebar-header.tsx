@@ -1,5 +1,6 @@
 import { GlobalSearch } from '@/components/global-search';
 import { NotificationDropdown } from '@/components/notification-dropdown';
+import { PwaInstallAction } from '@/components/pwa-install-action';
 import { ThemeModeSwitch } from '@/components/theme-mode-switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ export function AppSidebarHeader({ breadcrumbs = [], pageTitle }: { breadcrumbs?
                 <p className="hidden shrink-0 text-sm font-semibold text-slate-600 lg:block dark:text-slate-300">{title}</p>
             </div>
             <TooltipProvider delayDuration={0}>
+                <PwaInstallAction />
                 <ThemeModeSwitch />
                 <Button type="button" variant="outline" size="icon" className="size-10 rounded-lg bg-white shadow-none dark:bg-slate-950">
                     <NotificationDropdown />

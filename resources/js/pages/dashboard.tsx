@@ -125,10 +125,11 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
                             <div className="border-input mt-2 grid h-12 w-full max-w-72 grid-cols-2 rounded-md border bg-slate-50 p-[6px] shadow-sm dark:bg-slate-950">
                                 <button
                                     type="button"
-                                    className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${currentScope === 'personal'
-                                        ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
-                                        : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
-                                        }`}
+                                    className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${
+                                        currentScope === 'personal'
+                                            ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                                            : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
+                                    }`}
                                     onClick={() => openScope('personal')}
                                 >
                                     Pribadi
@@ -136,10 +137,11 @@ export default function Dashboard({ summary, families = [], latestAnalysis = nul
                                 {families.length > 0 && (
                                     <button
                                         type="button"
-                                        className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${currentScope === 'family'
-                                            ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
-                                            : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
-                                            }`}
+                                        className={`flex items-center justify-center rounded-sm px-3 text-sm font-semibold whitespace-nowrap transition-all ${
+                                            currentScope === 'family'
+                                                ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                                                : 'text-muted-foreground hover:text-slate-900 dark:hover:text-white'
+                                        }`}
                                         onClick={() => openScope('family')}
                                     >
                                         Keluarga aktif

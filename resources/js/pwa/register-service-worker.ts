@@ -1,5 +1,5 @@
 export function registerServiceWorker() {
-    if (!('serviceWorker' in navigator) || import.meta.env.DEV) {
+    if (!('serviceWorker' in navigator) || !window.isSecureContext) {
         return;
     }
 
