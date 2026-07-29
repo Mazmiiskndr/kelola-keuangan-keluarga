@@ -158,8 +158,12 @@ class WhatsAppBotService
         }
 
         $category = Category::firstOrCreate(
-            ['user_id' => $user->id, 'name' => $draft['category_name']],
-            ['type' => $draft['type'], 'is_default' => false, 'family_id' => $draft['family_id']]
+            [
+                'user_id' => $user->id,
+                'name' => $draft['category_name'],
+                'type' => $draft['type'],
+            ],
+            ['is_default' => false, 'family_id' => $draft['family_id']]
         );
 
         try {

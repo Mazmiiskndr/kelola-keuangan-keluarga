@@ -143,9 +143,9 @@ class FinanceTransactionController extends Controller
             [
                 'user_id' => $request->user()->id,
                 'name' => 'Tabungan',
+                'type' => 'expense',
             ],
             [
-                'type' => 'expense',
                 'color' => '#14b8a6',
                 'icon' => 'PiggyBank',
                 'is_default' => true,

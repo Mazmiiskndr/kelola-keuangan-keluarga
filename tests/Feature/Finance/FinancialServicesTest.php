@@ -680,6 +680,21 @@ class FinancialServicesTest extends TestCase
         $this->assertSame(['Azmi', 'Istri'], collect($summary['member_breakdown'])->pluck('name')->all());
     }
 
+    public function test_family_viewer_summary_does_not_expose_account_or_member_details(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $family = $this->family($owner);
+        $this->familyMember($family, $viewer, 'viewer');
+        $this->account($owner, 100000);
+
+        $summary = app(FinancialMetricService::class)->monthlySummary($viewer, now()->format('Y-m'), 'family', $family->load('members.user'));
+
+        $this->assertFalse($summary['can_view_family_details']);
+        $this->assertSame([], $summary['accounts']);
+        $this->assertSame([], $summary['member_breakdown']);
+    }
+
     public function test_user_cannot_create_transaction_from_unrelated_users_private_account(): void
     {
         $user = User::factory()->create();
@@ -925,6 +940,25 @@ class FinancialServicesTest extends TestCase
         $this->assertSame('completed', $analysis->status);
         $this->assertNotEmpty($analysis->result_summary);
         $this->assertGreaterThan(0, $analysis->aiRecommendations()->count());
+    }
+
+    public function test_monthly_summary_merges_categories_with_equivalent_names(): void
+    {
+        $user = User::factory()->create();
+        $account = $this->account($user, 100000);
+        $other = $this->category($user, 'expense', 'Lainnya');
+        $otherWithWhitespace = $this->category($user, 'expense', ' lainnya ');
+
+        $this->transaction($user, $account, $other, ['amount' => 20000]);
+        $this->transaction($user, $account, $otherWithWhitespace, ['amount' => 30000]);
+
+        $summary = app(FinancialMetricService::class)->monthlySummary($user, now()->format('Y-m'));
+        $otherCategories = collect($summary['expense_by_category'])->filter(
+            fn (array $category): bool => strtolower(trim($category['name'])) === 'lainnya',
+        );
+
+        $this->assertCount(1, $otherCategories);
+        $this->assertSame(50000.0, $otherCategories->first()['amount']);
     }
 
     /**

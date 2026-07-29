@@ -24,10 +24,17 @@ class DebtPaymentService
     public function pay(Debt $debt, array $data): DebtPayment
     {
         return $this->database->transaction(function () use ($debt, $data) {
+            $debt = Debt::query()->lockForUpdate()->findOrFail($debt->id);
             $amount = (float) $data['amount'];
 
             if ($amount <= 0) {
                 throw ValidationException::withMessages(['amount' => 'Nominal pembayaran harus lebih dari 0.']);
+            }
+
+            $outstandingAmount = (float) $debt->outstanding_amount;
+
+            if ($amount > $outstandingAmount) {
+                throw ValidationException::withMessages(['amount' => 'Nominal pembayaran tidak boleh melebihi sisa hutang.']);
             }
 
             $paymentAccountId = $data['payment_account_id'] ?? $debt->payment_account_id;
@@ -57,10 +64,15 @@ class DebtPaymentService
             ]);
 
             $principal = (float) ($data['principal_amount'] ?? $amount);
+
+            if ($principal > $outstandingAmount) {
+                throw ValidationException::withMessages(['principal_amount' => 'Pokok pembayaran tidak boleh melebihi sisa hutang.']);
+            }
+
             $debt->forceFill([
-                'outstanding_amount' => max(0, (float) $debt->outstanding_amount - $principal),
+                'outstanding_amount' => $outstandingAmount - $principal,
                 'remaining_tenor_months' => $debt->remaining_tenor_months ? max(0, $debt->remaining_tenor_months - 1) : null,
-                'status' => ((float) $debt->outstanding_amount - $principal) <= 0 ? 'paid_off' : $debt->status,
+                'status' => ($outstandingAmount - $principal) <= 0 ? 'paid_off' : $debt->status,
             ])->save();
 
             return DebtPayment::query()->create([

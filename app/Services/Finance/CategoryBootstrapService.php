@@ -10,17 +10,25 @@ class CategoryBootstrapService
 {
     public function ensureDefaults(User $user): void
     {
-        if ($user->categories()->where('is_default', true)->exists()) {
-            return;
-        }
-
         foreach ($this->defaults() as $category) {
+            if ($this->hasMatchingCategory($user, $category['name'], $category['type'])) {
+                continue;
+            }
+
             Category::query()->create([
                 ...$category,
                 'user_id' => $user->id,
                 'is_default' => true,
             ]);
         }
+    }
+
+    private function hasMatchingCategory(User $user, string $name, string $type): bool
+    {
+        return $user->categories()
+            ->where('type', $type)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($name))])
+            ->exists();
     }
 
     /**

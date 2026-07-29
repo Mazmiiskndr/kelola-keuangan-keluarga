@@ -1,12 +1,13 @@
 import { CurrencyInput } from '@/components/finance/currency-input';
 import { DateTimeDisplay } from '@/components/finance/date-display';
 import { DatePickerInput } from '@/components/finance/date-picker-input';
+import { DebtArchiveDialog } from '@/components/finance/debt-archive-dialog';
+import { DebtBalanceSummary } from '@/components/finance/debt-balance-summary';
 import { FinanceBadge } from '@/components/finance/finance-badge';
 import { FinanceSelect } from '@/components/finance/finance-select';
 import { FormError } from '@/components/finance/form-error';
-import { MoneyDisplay } from '@/components/finance/money-display';
+import { formatMoney } from '@/components/finance/money-display';
 import { PageHeader, SubmitButton } from '@/components/finance/page-header';
-import { ProgressRow } from '@/components/finance/progress-row';
 import { RequiredLabel } from '@/components/finance/required-label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,13 +16,26 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { accountLabel } from '@/lib/finance-labels';
 import { toDateInputValue, toFormString } from '@/lib/form-values';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { type Category, type Debt, type FinancialAccount } from '@/types/finance';
-import { Head, router, useForm } from '@inertiajs/react';
-import { HandCoins, Pencil, Trash2, X } from 'lucide-react';
+import { Head, useForm } from '@inertiajs/react';
+import { Archive, Check, HandCoins, Pencil, X } from 'lucide-react';
 import { useState, type React } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Hutang', href: '/debts' }];
+const installmentTenors = [6, 12, 24];
+
+function calculateRemainingTenor(outstandingAmount: string, monthlyPayment: string): string {
+    const outstanding = Number(outstandingAmount);
+    const payment = Number(monthlyPayment);
+
+    if (!Number.isFinite(outstanding) || !Number.isFinite(payment) || outstanding <= 0 || payment <= 0) {
+        return '';
+    }
+
+    return Math.ceil(outstanding / payment).toString();
+}
 
 interface DebtsProps {
     debts: Debt[];
@@ -31,6 +45,9 @@ interface DebtsProps {
 
 export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) {
     const [editingDebtId, setEditingDebtId] = useState<number | null>(null);
+    const [selectedPaymentPreset, setSelectedPaymentPreset] = useState<'monthly' | 'minimum' | 'full' | null>(null);
+    const [debtToArchive, setDebtToArchive] = useState<Debt | null>(null);
+    const payableDebts = debts.filter((debt) => debt.status === 'active' && Number(debt.outstanding_amount) > 0);
     const form = useForm({
         name: '',
         type: 'installment',
@@ -52,7 +69,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
     });
 
     const paymentForm = useForm({
-        debt_id: debts[0]?.id?.toString() ?? '',
+        debt_id: payableDebts[0]?.id?.toString() ?? '',
         payment_account_id: accounts[0]?.id?.toString() ?? '',
         category_id: categories[0]?.id?.toString() ?? '',
         amount: '',
@@ -63,6 +80,12 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
         paid_at: new Date().toISOString().slice(0, 10),
         notes: '',
     });
+    const selectedPaymentDebt = payableDebts.find((debt) => debt.id.toString() === paymentForm.data.debt_id);
+    const recommendedPaymentAmount = selectedPaymentDebt
+        ? Math.min(Number(selectedPaymentDebt.monthly_payment), Number(selectedPaymentDebt.outstanding_amount))
+        : 0;
+    const outstandingAmount = Number(form.data.outstanding_amount);
+    const hasOutstandingAmount = outstandingAmount > 0;
 
     function submit(event: React.FormEvent) {
         event.preventDefault();
@@ -134,8 +157,20 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
 
         paymentForm.post(`/debts/${paymentForm.data.debt_id}/payments`, {
             preserveScroll: true,
-            onSuccess: () => paymentForm.reset('amount', 'principal_amount', 'interest_amount', 'fee_amount', 'notes'),
+            onSuccess: () => {
+                paymentForm.reset('amount', 'principal_amount', 'interest_amount', 'fee_amount', 'notes');
+                setSelectedPaymentPreset(null);
+            },
         });
+    }
+
+    function applyPaymentPreset(amount: number, preset: 'monthly' | 'minimum' | 'full') {
+        setSelectedPaymentPreset(preset);
+        paymentForm.setData((data) => ({
+            ...data,
+            amount: amount.toString(),
+            principal_amount: amount.toString(),
+        }));
     }
 
     return (
@@ -147,7 +182,7 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                     description="Catat pinjaman, kartu kredit, cicilan, jatuh tempo, dan pembayaran bulanan agar masuk dalam perhitungan pengeluaran wajib."
                     icon={HandCoins}
                 />
-                <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
+                <div className="grid gap-4 xl:grid-cols-[550px_1fr]">
                     <div className="space-y-4">
                         <Card>
                             <CardHeader>
@@ -192,7 +227,11 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Pemberi hutang</Label>
-                                            <Input value={form.data.lender} onChange={(event) => form.setData('lender', event.target.value)} />
+                                            <Input
+                                                value={form.data.lender}
+                                                onChange={(event) => form.setData('lender', event.target.value)}
+                                                placeholder="Contoh: Bank, Kredivo, atau kerabat"
+                                            />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
@@ -207,7 +246,13 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                             <Label>Sisa hutang</Label>
                                             <CurrencyInput
                                                 value={form.data.outstanding_amount}
-                                                onValueChange={(value) => form.setData('outstanding_amount', value)}
+                                                onValueChange={(value) =>
+                                                    form.setData((data) => ({
+                                                        ...data,
+                                                        outstanding_amount: value,
+                                                        remaining_tenor_months: calculateRemainingTenor(value, data.monthly_payment),
+                                                    }))
+                                                }
                                             />
                                         </div>
                                     </div>
@@ -216,7 +261,15 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                             <RequiredLabel>Cicilan bulanan</RequiredLabel>
                                             <CurrencyInput
                                                 value={form.data.monthly_payment}
-                                                onValueChange={(value) => form.setData('monthly_payment', value)}
+                                                onValueChange={(value) =>
+                                                    form.setData((data) => ({
+                                                        ...data,
+                                                        monthly_payment: value,
+                                                        remaining_tenor_months: calculateRemainingTenor(data.outstanding_amount, value),
+                                                    }))
+                                                }
+                                                disabled={!hasOutstandingAmount}
+                                                placeholder={hasOutstandingAmount ? '0' : 'Isi sisa hutang terlebih dahulu'}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -232,6 +285,38 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                             />
                                             <FormError message={form.errors.interest_rate} />
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Rekomendasi cicilan</Label>
+                                        {hasOutstandingAmount ? (
+                                            <div className="flex gap-2 overflow-x-auto pb-1">
+                                                {installmentTenors.map((tenor) => {
+                                                    const monthlyPayment = Math.ceil(outstandingAmount / tenor);
+
+                                                    return (
+                                                        <button
+                                                            key={tenor}
+                                                            type="button"
+                                                            className="shrink-0 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-500/20 dark:text-blue-300"
+                                                            onClick={() =>
+                                                                form.setData((data) => ({
+                                                                    ...data,
+                                                                    monthly_payment: monthlyPayment.toString(),
+                                                                    remaining_tenor_months: calculateRemainingTenor(
+                                                                        data.outstanding_amount,
+                                                                        monthlyPayment.toString(),
+                                                                    ),
+                                                                }))
+                                                            }
+                                                        >
+                                                            {tenor}x · {formatMoney(monthlyPayment)}/bulan
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-muted-foreground text-xs">Isi sisa hutang untuk melihat rekomendasi cicilan.</p>
+                                        )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
@@ -273,8 +358,13 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                                 type="number"
                                                 min="0"
                                                 value={form.data.remaining_tenor_months}
-                                                onChange={(event) => form.setData('remaining_tenor_months', event.target.value)}
+                                                readOnly
+                                                placeholder="Terisi otomatis"
+                                                aria-describedby="remaining-tenor-description"
                                             />
+                                            <p id="remaining-tenor-description" className="text-muted-foreground text-xs">
+                                                Dihitung dari sisa hutang dan cicilan bulanan.
+                                            </p>
                                         </div>
                                     </div>
                                     <label className="flex items-center gap-2 text-sm">
@@ -300,17 +390,21 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                         <FinanceSelect
                                             value={paymentForm.data.debt_id}
                                             onValueChange={(value) => {
-                                                const debt = debts.find((item) => item.id.toString() === value);
+                                                const debt = payableDebts.find((item) => item.id.toString() === value);
+                                                const recommendedAmount = debt
+                                                    ? Math.min(Number(debt.monthly_payment), Number(debt.outstanding_amount))
+                                                    : 0;
                                                 paymentForm.setData((data) => ({
                                                     ...data,
                                                     debt_id: value,
                                                     payment_account_id: debt?.payment_account?.id?.toString() ?? data.payment_account_id,
                                                     category_id: debt?.category?.id?.toString() ?? data.category_id,
-                                                    amount: debt?.monthly_payment?.toString() ?? data.amount,
-                                                    principal_amount: debt?.monthly_payment?.toString() ?? data.principal_amount,
+                                                    amount: recommendedAmount.toString(),
+                                                    principal_amount: recommendedAmount.toString(),
                                                 }));
+                                                setSelectedPaymentPreset(debt ? 'monthly' : null);
                                             }}
-                                            options={debts.map((debt) => ({
+                                            options={payableDebts.map((debt) => ({
                                                 value: debt.id.toString(),
                                                 label: debt.name,
                                             }))}
@@ -322,7 +416,10 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                             <RequiredLabel>Nominal bayar</RequiredLabel>
                                             <CurrencyInput
                                                 value={paymentForm.data.amount}
-                                                onValueChange={(value) => paymentForm.setData('amount', value)}
+                                                onValueChange={(value) => {
+                                                    setSelectedPaymentPreset(null);
+                                                    paymentForm.setData('amount', value);
+                                                }}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -333,13 +430,74 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                             />
                                         </div>
                                     </div>
+                                    {selectedPaymentDebt && (
+                                        <div className="space-y-2">
+                                            <Label>Pilih nominal pembayaran</Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    className={cn(
+                                                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                                                        selectedPaymentPreset === 'monthly'
+                                                            ? 'border-2 border-blue-600 bg-blue-100 text-blue-800 shadow-sm dark:border-blue-400 dark:bg-blue-950/70 dark:text-blue-100'
+                                                            : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200',
+                                                    )}
+                                                    onClick={() => applyPaymentPreset(recommendedPaymentAmount, 'monthly')}
+                                                >
+                                                    {selectedPaymentPreset === 'monthly' && <Check className="size-3" />}
+                                                    Cicilan bulanan ({formatMoney(recommendedPaymentAmount)})
+                                                </button>
+                                                {Number(selectedPaymentDebt.minimum_payment) > 0 &&
+                                                    Number(selectedPaymentDebt.minimum_payment) !== recommendedPaymentAmount && (
+                                                        <button
+                                                            type="button"
+                                                            className={cn(
+                                                                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                                                                selectedPaymentPreset === 'minimum'
+                                                                    ? 'border-2 border-amber-600 bg-amber-100 text-amber-800 shadow-sm dark:border-amber-400 dark:bg-amber-950/70 dark:text-amber-100'
+                                                                    : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200',
+                                                            )}
+                                                            onClick={() =>
+                                                                applyPaymentPreset(
+                                                                    Math.min(
+                                                                        Number(selectedPaymentDebt.minimum_payment),
+                                                                        Number(selectedPaymentDebt.outstanding_amount),
+                                                                    ),
+                                                                    'minimum',
+                                                                )
+                                                            }
+                                                        >
+                                                            {selectedPaymentPreset === 'minimum' && <Check className="size-3" />}
+                                                            Bayar minimum
+                                                        </button>
+                                                    )}
+                                                <button
+                                                    type="button"
+                                                    className={cn(
+                                                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                                                        selectedPaymentPreset === 'full'
+                                                            ? 'border-2 border-emerald-600 bg-emerald-100 text-emerald-800 shadow-sm dark:border-emerald-400 dark:bg-emerald-950/70 dark:text-emerald-100'
+                                                            : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200',
+                                                    )}
+                                                    onClick={() => applyPaymentPreset(Number(selectedPaymentDebt.outstanding_amount), 'full')}
+                                                >
+                                                    {selectedPaymentPreset === 'full' && <Check className="size-3" />}
+                                                    Lunasi 100% ({formatMoney(selectedPaymentDebt.outstanding_amount)})
+                                                </button>
+                                            </div>
+                                            <p className="text-muted-foreground text-xs">
+                                                Maksimal {formatMoney(selectedPaymentDebt.outstanding_amount)} sesuai sisa hutang.
+                                            </p>
+                                        </div>
+                                    )}
+                                    <FormError message={paymentForm.errors.amount} />
                                     <SubmitButton processing={paymentForm.processing}>Catat Pembayaran</SubmitButton>
                                 </form>
                             </CardContent>
                         </Card>
                     </div>
 
-                    <Card>
+                    <Card className="h-fit self-start">
                         <CardHeader>
                             <CardTitle>Daftar Hutang</CardTitle>
                         </CardHeader>
@@ -354,49 +512,47 @@ export default function DebtsIndex({ debts, accounts, categories }: DebtsProps) 
                                                 <FinanceBadge value={debt.status} />
                                             </div>
                                             <p className="text-muted-foreground mt-1 text-sm">
-                                                {debt.lender || 'Tanpa lender'} · jatuh tempo <DateTimeDisplay value={debt.next_due_date} dateOnly />
+                                                {debt.lender || 'Tanpa lender'} · Jatuh Tempo <DateTimeDisplay value={debt.next_due_date} dateOnly />
                                             </p>
                                         </div>
                                         <div className="flex shrink-0 items-center gap-2">
+                                            {debt.status !== 'paid_off' && (
+                                                <button
+                                                    className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
+                                                    onClick={() => editDebt(debt)}
+                                                    aria-label="Edit hutang"
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                            )}
                                             <button
-                                                className="text-muted-foreground rounded-md p-2 hover:bg-blue-50 hover:text-blue-700"
-                                                onClick={() => editDebt(debt)}
-                                                aria-label="Edit hutang"
-                                            >
-                                                <Pencil className="size-4" />
-                                            </button>
-                                            <button
-                                                className="text-muted-foreground rounded-md p-2 hover:bg-rose-50 hover:text-rose-700"
-                                                onClick={() => {
-                                                    if (window.confirm('Yakin ingin mengarsipkan hutang ini?')) {
-                                                        router.delete(`/debts/${debt.id}`, { preserveScroll: true });
-                                                    }
-                                                }}
+                                                className="text-muted-foreground rounded-md p-2 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300"
+                                                onClick={() => setDebtToArchive(debt)}
                                                 aria-label="Arsipkan hutang"
                                             >
-                                                <Trash2 className="size-4" />
+                                                <Archive className="size-4" />
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                        <ProgressRow
-                                            label="Sisa hutang"
-                                            value={debt.outstanding_amount}
-                                            target={debt.principal_amount}
-                                            semantic="budget"
-                                        />
-                                        <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900">
-                                            <p className="text-muted-foreground text-sm">Cicilan bulanan</p>
-                                            <p className="mt-1 text-lg font-semibold">
-                                                <MoneyDisplay value={debt.monthly_payment} />
-                                            </p>
+                                    {debt.status === 'paid_off' ? (
+                                        <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
+                                            <div>
+                                                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Hutang sudah lunas</p>
+                                                <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">
+                                                    Tidak ada pembayaran atau cicilan tersisa.
+                                                </p>
+                                            </div>
+                                            <span className="shrink-0 text-sm font-bold text-emerald-700 dark:text-emerald-200">100%</span>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <DebtBalanceSummary debt={debt} />
+                                    )}
                                 </div>
                             ))}
                         </CardContent>
                     </Card>
                 </div>
+                <DebtArchiveDialog debt={debtToArchive} onClose={() => setDebtToArchive(null)} />
             </div>
         </AppLayout>
     );

@@ -70,10 +70,10 @@ class FinancialMetricService
             ],
             'expense_by_category' => $this->expenseByCategory($transactions),
             'largest_expenses' => $this->largestExpenses($transactions, $isFamilyScope && ! $canViewFamilyDetails),
-            'accounts' => $this->accountsBreakdown($memberIds, $isFamilyScope && $canViewFamilyDetails),
+            'accounts' => $isFamilyScope && ! $canViewFamilyDetails ? [] : $this->accountsBreakdown($memberIds, $isFamilyScope),
             'trend' => $this->sixMonthTrend($memberIds, $month),
             'upcoming_debts' => $this->upcomingDebts($memberIds),
-            'member_breakdown' => $isFamilyScope ? $this->memberBreakdown($family, $transactions) : [],
+            'member_breakdown' => $isFamilyScope && $canViewFamilyDetails ? $this->memberBreakdown($family, $transactions) : [],
         ];
     }
 
@@ -81,9 +81,9 @@ class FinancialMetricService
     {
         return $transactions
             ->where('type', TransactionType::Expense->value)
-            ->groupBy('category.name')
-            ->map(fn (Collection $items, string $name): array => [
-                'name' => $name ?: 'Tanpa kategori',
+            ->groupBy(fn (FinanceTransaction $transaction): string => $this->normalizedCategoryName($transaction->category?->name))
+            ->map(fn (Collection $items): array => [
+                'name' => $this->displayCategoryName($items->first()?->category?->name),
                 'amount' => (float) $items->sum('amount'),
                 'color' => $items->first()?->category?->color ?? '#94a3b8',
                 'top_items' => $items->sortByDesc('amount')->take(5)->map(fn (FinanceTransaction $t): array => [
@@ -96,6 +96,16 @@ class FinancialMetricService
             ->sortByDesc('amount')
             ->values()
             ->all();
+    }
+
+    private function normalizedCategoryName(?string $name): string
+    {
+        return strtolower(trim($name ?? '')) ?: 'tanpa kategori';
+    }
+
+    private function displayCategoryName(?string $name): string
+    {
+        return trim($name ?? '') ?: 'Tanpa kategori';
     }
 
     private function largestExpenses(Collection $transactions, bool $anonymize = false): array
